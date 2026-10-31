@@ -1,0 +1,167 @@
+/**
+ * Setup.gs — run setup() ONCE from the editor (▶ Run). It creates every tab with its
+ * columns, the first admin account, settings, 4 sample branches with chargers and
+ * 3 notices. addDemoHistory() adds sample customers + 30 days of charges so the
+ * dashboards have something to show; clearDemoData() removes them before launch.
+ */
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('TREE CHARGE')
+    .addItem('1 · ຕັ້ງຄ່າຖານຂໍ້ມູນ (setup)', 'setup')
+    .addItem('2 · ເພີ່ມຂໍ້ມູນທົດລອງ 30 ວັນ', 'addDemoHistory')
+    .addItem('ລົບຂໍ້ມູນທົດລອງ (ກ່ອນເປີດໃຊ້ຈິງ)', 'clearDemoData')
+    .addItem('ເບິ່ງລິ້ງເວັບແອັບ', 'showLinks')
+    .addItem('ແກ້ເຂົ້າແອັດມິນບໍ່ໄດ້ (admin / tree1234)', 'fixAdmin')
+    .addToUi();
+}
+
+function setup() {
+  var ss = SpreadsheetApp.getActive();
+  ss.setSpreadsheetTimeZone('Asia/Vientiane');
+  Object.keys(SCHEMA).forEach(function (name) {
+    var s = ss.getSheetByName(name) || ss.insertSheet(name);
+    var cols = SCHEMA[name];
+    if (s.getMaxColumns() < cols.length) s.insertColumnsAfter(s.getMaxColumns(), cols.length - s.getMaxColumns());
+    s.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setBackground('#0f1a13').setFontColor('#ffffff');
+    s.setFrozenRows(1);
+    cols.forEach(function (c, i) { if (TEXT_COLS.indexOf(c) >= 0) s.getRange(2, i + 1, s.getMaxRows() - 1, 1).setNumberFormat('@'); });
+  });
+  var first = ss.getSheetByName('Sheet1') || ss.getSheetByName('ชีต1') || ss.getSheetByName('Feuille 1');
+  if (first && ss.getSheets().length > 1 && first.getLastRow() === 0) ss.deleteSheet(first);
+  _memo = {};
+
+  for (var k in CONFIG_DEFAULTS) if (!find('Config', k)) insert('Config', { id: k, value: CONFIG_DEFAULTS[k][0], note: CONFIG_DEFAULTS[k][1] });
+  if (!config().hookKey) setConfig('hookKey', Utilities.getUuid().replace(/-/g, ''));
+
+  if (!rows('Admins').length) {
+    var salt = newSalt_();
+    insert('Admins', { id: 'admin', name: 'Admin', role: 'owner', salt: salt, passH: hashPw_(salt, 'tree1234'), created: now_() });
+  }
+  if (!rows('Branches').length) seedBranches_();
+  uploadFolder_();
+  try { SpreadsheetApp.getUi().alert('ຕັ້ງຄ່າສຳເລັດ ✓\n\nແອັດມິນ: admin / tree1234 (ປ່ຽນລະຫັດທັນທີໃນໜ້າ ຕັ້ງຄ່າລະບົບ)\n\nຂັ້ນຕໍ່ໄປ: Deploy → New deployment → Web app'); } catch (e) {}
+}
+
+function seedBranches_() {
+  var L = function (lo, th, en, zh) { return { lo: lo, th: th, en: en, zh: zh }; };
+  var B = [
+    { id: 'A', code: 'A', name: L('ສາຂາ ຖະໜົນລ້ານຊ້າງ', 'สาขาถนนล้านช้าง', 'Lane Xang Ave.', '澜沧大道站'), area: L('ເມືອງຈັນທະບູລີ', 'เมืองจันทบุรี', 'Chanthabouly', '占塔武里县'),
+      address: L('ຖະໜົນລ້ານຊ້າງ, ເມືອງຈັນທະບູລີ, ນະຄອນຫຼວງວຽງຈັນ', 'ถนนล้านช้าง เมืองจันทบุรี นครหลวงเวียงจันทน์', 'Lane Xang Ave., Chanthabouly, Vientiane Capital', '万象首都 占塔武里县 澜沧大道'), lat: 17.9668, lng: 102.6118, h24: true, hours: '', price: 2999, parkFree: true, parkFee: 0, parkMins: 0 },
+    { id: 'B', code: 'B', name: L('ສາຂາ ໂພນທັນ', 'สาขาโพนทัน', 'Phonthan', '蓬坦站'), area: L('ເມືອງໄຊເສດຖາ', 'เมืองไชเสฏฐา', 'Xaysetha', '赛色塔县'),
+      address: L('ບ້ານໂພນທັນ, ເມືອງໄຊເສດຖາ, ນະຄອນຫຼວງວຽງຈັນ', 'บ้านโพนทัน เมืองไชเสฏฐา นครหลวงเวียงจันทน์', 'Ban Phonthan, Xaysetha, Vientiane Capital', '万象首都 赛色塔县 蓬坦村'), lat: 17.9792, lng: 102.6478, h24: true, hours: '', price: 3100, parkFree: true, parkFee: 0, parkMins: 0 },
+    { id: 'C', code: 'C', name: L('ສາຂາ ທາງ 13 ໃຕ້', 'สาขาถนน 13 ใต้', 'Route 13 South', '13 号南路站'), area: L('ເມືອງຫາດຊາຍຟອງ', 'เมืองหาดทรายฟอง', 'Hadxayfong', '哈赛丰县'),
+      address: L('ທາງເລກ 13 ໃຕ້, ເມືອງຫາດຊາຍຟອງ, ນະຄອນຫຼວງວຽງຈັນ', 'ถนนหมายเลข 13 ใต้ เมืองหาดทรายฟอง นครหลวงเวียงจันทน์', 'Route 13 South, Hadxayfong, Vientiane Capital', '万象首都 哈赛丰县 13 号南路'), lat: 17.8893, lng: 102.6822, h24: true, hours: '', price: 2800, parkFree: false, parkFee: 500, parkMins: 10 },
+    { id: 'D', code: 'D', name: L('ສາຂາ ດົງໂດກ', 'สาขาดงโดก', 'Dongdok', '东多站'), area: L('ເມືອງໄຊທານີ', 'เมืองไชธานี', 'Xaythany', '赛塔尼县'),
+      address: L('ບ້ານດົງໂດກ, ເມືອງໄຊທານີ, ນະຄອນຫຼວງວຽງຈັນ', 'บ้านดงโดก เมืองไชธานี นครหลวงเวียงจันทน์', 'Ban Dongdok, Xaythany, Vientiane Capital', '万象首都 赛塔尼县 东多村'), lat: 18.0372, lng: 102.6284, h24: false, hours: '06:00–22:00', price: 2999, parkFree: true, parkFee: 0, parkMins: 0 }
+  ];
+  insertMany('Branches', B.map(function (b) { b.phone = '020 9209 5805'; b.visible = true; b.created = now_(); return l4in('Branches', b); }));
+  var ch = [['A', 1, 120], ['A', 2, 120], ['A', 3, 120], ['A', 4, 60], ['B', 1, 120], ['B', 2, 60], ['C', 1, 120], ['C', 2, 120], ['D', 1, 120], ['D', 2, 60]];
+  insertMany('Chargers', ch.map(function (x) {
+    var no = x[0] + '-' + ('0' + x[1]).slice(-2);
+    return { id: 'CH' + x[0] + x[1], branch: x[0], no: no, cpid: 'TC' + x[0] + ('0' + x[1]).slice(-2), model: 'DC ' + x[2] + ' kW', conns: [{ n: 1, type: 'CCS2', kw: x[2] }, { n: 2, type: 'GB/T', kw: x[2] }], maint: false, created: now_() };
+  }));
+  var d = function (n) { return Utilities.formatDate(new Date(Date.now() - n * 864e5), tz_(), 'yyyy-MM-dd'); };
+  insertMany('Notices', [
+    { id: 'N1', type: 'new', title: L('ເປີດສາຂາໃໝ່: ສາຂາ ດົງໂດກ', 'เปิดสาขาใหม่: สาขาดงโดก', 'New branch: Dongdok', '新站点开业：东多站'), body: L('ເປີດໃຫ້ບໍລິການແລ້ວ 2 ຕູ້ (CCS2 + GB/T) · ເປີດ 06:00–22:00 · ຈອດຟຣີ', 'เปิดให้บริการแล้ว 2 ตู้ (CCS2 + GB/T) · เปิด 06:00–22:00 · จอดฟรี', 'Now open with 2 chargers (CCS2 + GB/T) · 06:00–22:00 · free parking', '已开放 2 台充电桩（CCS2 + GB/T）· 06:00–22:00 · 免费停车'), date: d(2), link: 'D', push: false, active: true, sent: 0 },
+    { id: 'N2', type: 'promo', title: L('ສາກກາງຄືນຫຼຸດ 10%', 'ชาร์จกลางคืนลด 10%', '10% off night charging', '夜间充电 9 折'), body: L('22:00–06:00 ທຸກສາຂາ', '22:00–06:00 ทุกสาขา', '22:00–06:00 at every branch', '所有站点 22:00–06:00'), date: d(1), link: '', push: false, active: true, sent: 0 },
+    { id: 'N3', type: 'maint', title: L('ປິດປັບປຸງຊົ່ວຄາວ: ສາຂາ ທາງ 13 ໃຕ້ (ຕູ້ C-02)', 'ปิดปรับปรุงชั่วคราว: สาขาถนน 13 ใต้ (ตู้ C-02)', 'Maintenance: Route 13 South (C-02)', '临时维护：13 号南路站（C-02）'), body: L('ຕູ້ອື່ນໃຊ້ໄດ້ປົກກະຕິ', 'ตู้อื่นใช้ได้ปกติ', 'Other chargers work normally', '其他充电桩正常'), date: d(3), link: 'C', push: false, active: true, sent: 0 }
+  ].map(function (n) { return l4in('Notices', n); }));
+}
+
+/** Sample customers (password 123456), 30 days of charges, 2 franchise accounts (password 123456). */
+function addDemoHistory() {
+  _memo = {};
+  var names = ['ສົມສັກ ວົງສະຫວັນ', 'ນາງ ແກ້ວ', 'ບຸນມີ ສີລາວົງ', 'ຄຳພອນ', 'ວັນນາ ພົມມະຈັນ', 'ສຸກສະຫວັນ', 'ນ້ອຍ ແສງທອງ', 'ພອນສະຫວັນ', 'ອານຸສອນ', 'ສີສະຫວາດ', 'ດາລາວອນ', 'Somchai'];
+  var salt = newSalt_(), passH = hashPw_(salt, '123456');
+  var custs = names.map(function (n, i) { return { id: 'D' + (101 + i), name: n, phone: '0205550' + ('000' + (101 + i)).slice(-4), salt: salt, passH: passH, joined: Utilities.formatDate(new Date(Date.now() - (40 + i) * 864e5), tz_(), 'yyyy-MM-dd HH:mm'), status: 'active', balance: 0, points: 0, lang: 'lo', lastLogin: '' }; })
+    .filter(function (c) { return !find('Customers', c.id) && !dupCheck_(c.name, c.phone).phone; });
+  var chargers = rows('Chargers'), branches = {}; rows('Branches').forEach(function (b) { branches[b.id] = b; });
+  var sessions = [], ledger = [], bal = {}, pts = {};
+  custs.forEach(function (c) { bal[c.id] = 0; pts[c.id] = 0; });
+  if (!custs.length) return;
+  for (var day = 29; day >= 0; day--) {
+    chargers.forEach(function (ch) {
+      var n = Math.floor(Math.random() * 4);
+      for (var k = 0; k < n; k++) {
+        var t = new Date(Date.now() - day * 864e5); t.setHours(6 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 60), 0, 0);
+        if (t.getTime() > Date.now()) continue;
+        var c = custs[Math.floor(Math.random() * custs.length)], b = branches[ch.branch], conn = json_(ch.conns, [])[Math.floor(Math.random() * 2)] || { n: 1, type: 'CCS2', kw: 60 };
+        var kwh = Math.round((8 + Math.random() * 45) * 10) / 10, energy = Math.round(kwh * num_(b.price));
+        var park = !bool_(b.parkFree) && Math.random() < 0.3 ? Math.ceil(Math.random() * 15) * num_(b.parkFee) : 0, total = energy + park;
+        var ts = Utilities.formatDate(t, tz_(), 'yyyy-MM-dd HH:mm:ss');
+        if (bal[c.id] < total) {
+          var amt = [200000, 300000, 500000][Math.floor(Math.random() * 3)];
+          bal[c.id] += amt;
+          ledger.push({ id: uid_('L'), t: Utilities.formatDate(new Date(t.getTime() - 3600e3), tz_(), 'yyyy-MM-dd HH:mm'), cust: c.id, type: 'topup', amt: amt, balAfter: bal[c.id], ref: 'DEMO' + Math.floor(Math.random() * 1e8), note: 'LAO QR (demo)', by: 'BCEL One' });
+        }
+        var mins = Math.round(kwh / (num_(conn.kw) * 0.85) * 60);
+        var id = uid_('S');
+        bal[c.id] -= total; pts[c.id] += Math.floor(kwh * 10);
+        sessions.push({ id: id, t: ts, end: Utilities.formatDate(new Date(t.getTime() + mins * 60000), tz_(), 'yyyy-MM-dd HH:mm:ss'), branch: ch.branch, charger: ch.no, cpid: ch.cpid, conn: conn.n, type: conn.type, cust: c.id,
+          price: num_(b.price), kw: num_(conn.kw), cap: 60, socStart: 25, socTarget: 90, soc: 90, kwh: kwh, energy: energy, park: park, total: total, mins: mins, status: 'done',
+          endReason: Math.random() < 0.75 ? 'full' : 'user', idleStart: '', rating: Math.random() < 0.4 ? 3 + Math.floor(Math.random() * 3) : '', flags: 'demo', txId: '' });
+        ledger.push({ id: uid_('L'), t: Utilities.formatDate(new Date(t.getTime() + mins * 60000), tz_(), 'yyyy-MM-dd HH:mm'), cust: c.id, type: 'charge', amt: -total, balAfter: bal[c.id], ref: id, note: ch.no + ' · ' + conn.n + ' · ' + kwh + ' kWh', by: 'system' });
+      }
+    });
+  }
+  custs.forEach(function (c) { c.balance = bal[c.id]; c.points = pts[c.id]; });
+  insertMany('Customers', custs);
+  sessions.sort(function (a, b) { return a.t < b.t ? -1 : 1; });
+  ledger.sort(function (a, b) { return a.t < b.t ? -1 : 1; });
+  insertMany('Sessions', sessions);
+  insertMany('Ledger', ledger);
+  if (!rows('Franchises').some(function (f) { return f.user === 'phonthan'; })) {
+    var s2 = newSalt_();
+    insertMany('Franchises', [
+      { id: 'FDEMO1', user: 'phonthan', name: 'ແຟຣນໄຊສ໌ ໂພນທັນ (ທົດລອງ)', phone: '020 5555 7777', bank: 'BCEL · 010-12-00-XXXXXX', branches: 'B', fee: 5, active: true, salt: s2, passH: hashPw_(s2, '123456'), created: now_() },
+      { id: 'FDEMO2', user: 'dongdok', name: 'ແຟຣນໄຊສ໌ ດົງໂດກ (ທົດລອງ)', phone: '020 2222 3333', bank: 'LDB · 0201-XXXXXXX', branches: 'D,C', fee: 5, active: true, salt: s2, passH: hashPw_(s2, '123456'), created: now_() }
+    ]);
+  }
+  try { SpreadsheetApp.getUi().alert('ເພີ່ມຂໍ້ມູນທົດລອງແລ້ວ: ' + custs.length + ' ລູກຄ້າ · ' + sessions.length + ' ການສາກ\nແຟຣນໄຊສ໌ທົດລອງ: phonthan / 123456 · dongdok / 123456'); } catch (e) {}
+}
+
+/** Remove everything addDemoHistory() made (customers D…, their charges and money, demo franchises). */
+function clearDemoData() {
+  _memo = {};
+  var isDemoCust = function (id) { return /^D\d+$/.test(String(id)); };
+  [['Sessions', function (r) { return isDemoCust(r.cust) || r.flags === 'demo'; }], ['Ledger', function (r) { return isDemoCust(r.cust); }],
+   ['Customers', function (r) { return isDemoCust(r.id); }], ['Franchises', function (r) { return String(r.id).indexOf('FDEMO') === 0; }],
+   ['Tokens', function (r) { return isDemoCust(r.uid) || String(r.uid).indexOf('FDEMO') === 0; }]].forEach(function (x) {
+    var s = sheet_(x[0]), cols = SCHEMA[x[0]], keep = rows(x[0]).filter(function (r) { return !x[1](r); });
+    if (s.getLastRow() > 1) s.getRange(2, 1, s.getLastRow() - 1, cols.length).clearContent();
+    delete _memo[x[0]];
+    insertMany(x[0], keep);
+  });
+  try { SpreadsheetApp.getUi().alert('ລົບຂໍ້ມູນທົດລອງແລ້ວ'); } catch (e) {}
+}
+
+function showLinks() {
+  var u = ScriptApp.getService().getUrl();
+  var msg = u ? ('ແອັບລູກຄ້າ:\n' + u + '\n\nແອັດມິນ:\n' + u + '?page=admin\n\nແຟຣນໄຊສ໌:\n' + u + '?page=partner\n\nລະຫັດ hook (OCPP/BCEL): ' + config().hookKey)
+    : 'ຍັງບໍ່ໄດ້ Deploy ເປັນ Web app';
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { console.log(msg); }
+}
+
+/**
+ * fixAdmin() — run this when the admin page won't let you in.
+ * Puts back the account admin / tree1234 (owner), clears the 15-minute lock after
+ * wrong passwords, signs out old admin sessions, and checks the 4 HTML files.
+ */
+function fixAdmin() {
+  _memo = {};
+  if (!SpreadsheetApp.getActive().getSheetByName('Admins')) setup();
+  _memo = {};
+  var salt = newSalt_();
+  var cur = rows('Admins').filter(function (x) { return String(x.id).trim().toLowerCase() === 'admin'; })[0];
+  var rec = { id: 'admin', name: (cur && cur.name) || 'Admin', role: 'owner', salt: salt, passH: hashPw_(salt, 'tree1234'), created: (cur && cur.created) || now_() };
+  if (cur) update('Admins', cur.id, rec); else insert('Admins', rec);
+  dropAllTokens_('a', 'admin');
+  var c = CacheService.getScriptCache(); ['try:a:admin', 'try:a:Admin', 'try:a:ADMIN', 'try:a:admin '].forEach(function (k) { c.remove(k); });
+  var files = ['App', 'AdminUI', 'PartnerUI', 'Logo'].map(function (f) {
+    try { HtmlService.createHtmlOutputFromFile(f); return '✓ ' + f; } catch (e) { return '✗ ' + f + '  ← ບໍ່ພົບໄຟລ໌ນີ້ / ไม่พบไฟล์นี้'; }
+  });
+  var u = ScriptApp.getService().getUrl();
+  var msg = 'ແອັດມິນ: admin / tree1234 ✓\n\nໄຟລ໌ HTML:\n' + files.join('\n') +
+    '\n\nລິ້ງແອັດມິນ / ลิงก์แอดมิน:\n' + (u ? u + '?page=admin' : '(ຍັງບໍ່ໄດ້ Deploy / ยังไม่ได้ Deploy)');
+  console.log(msg);
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) {}
+}

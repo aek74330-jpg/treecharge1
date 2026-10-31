@@ -1,0 +1,304 @@
+/**
+ * Admin.gs — the admin console's server side. Every change is checked here,
+ * written to the sheet, and logged in the Audit tab (who · what · when).
+ * Roles: owner = everything · staff = no money, franchise, settings or admins.
+ */
+function admin_(token, ownerOnly) {
+  var a = who_(token, 'a');
+  if (ownerOnly && a.role !== 'owner') throw err_('no_right');
+  return a;
+}
+
+function aLogin(d) {
+  var user = String(d.user || '').trim().toLowerCase();
+  var g = guardTries_('a:' + user);
+  var a = rows('Admins').filter(function (x) { return String(x.id).trim().toLowerCase() === user; })[0];
+  if (!checkPw_(a, d.pass)) { g.fail(); throw err_('bad_login'); }
+  g.ok();
+  audit_(a.id, 'login', 'admin', a.id);
+  return { token: issueToken_('a', a.id), me: { user: a.id, name: a.name, role: a.role } };
+}
+function aLogout(d, token) { dropToken_(token); return {}; }
+
+/** Everything the console shows, in the shape the page uses. */
+function aLoad(d, token) {
+  var a = admin_(token);
+  tickDemo_();
+  var days = Math.min(400, num_(d.days) || 120);
+  var since = Utilities.formatDate(new Date(Date.now() - days * 864e5), tz_(), 'yyyy-MM-dd');
+  var owner = a.role === 'owner';
+  var statusRows = {}; rows('Status').forEach(function (s) { statusRows[s.id] = s; });
+  var out = {
+    me: { user: a.id, name: a.name, role: a.role },
+    url: ScriptApp.getService().getUrl(),
+    branches: rows('Branches').map(function (b) { var o = branchOut_(b, false); o.rt = o.rating.avg; o.rn = o.rating.n; return o; }),
+    chargers: rows('Chargers').map(function (ch) {
+      var conns = json_(ch.conns, []);
+      var beat = 0;
+      conns.forEach(function (c) { var s = statusRows[ch.cpid + '-' + c.n]; if (s) beat = Math.max(beat, Math.round((Date.now() - parseT_(s.updated).getTime()) / 60000)); });
+      return { id: ch.id, branch: ch.branch, no: ch.no, cpid: ch.cpid, model: ch.model, maint: bool_(ch.maint), conns: conns,
+        live: conns.map(function (c) { var l = connLive_(ch, c.n); return bool_(ch.maint) ? 'maint' : l; }), beat: config().ocppMode === 'live' ? beat : 0 };
+    }),
+    customers: rows('Customers').map(function (c) { return { id: c.id, name: c.name, phone: c.phone, joined: c.joined, status: c.status, balance: num_(c.balance), points: num_(c.points) }; }),
+    sessions: rows('Sessions').filter(function (s) { return String(s.t) >= since; }).map(function (s) {
+      return { id: s.id, t: String(s.t).slice(0, 16), branch: s.branch, charger: s.charger, conn: num_(s.conn), type: s.type, cust: s.cust, kwh: num_(s.kwh), energy: num_(s.energy),
+        park: num_(s.park), total: s.status === 'done' ? num_(s.total) : num_(s.energy), mins: num_(s.mins), end: s.status === 'done' ? (s.endReason || 'full') : 'live', status: s.status };
+    }).sort(function (x, y) { return x.t < y.t ? 1 : -1; }),
+    ledger: owner ? rows('Ledger').filter(function (l) { return String(l.t) >= since; }).map(clean) : [],
+    franchises: owner ? rows('Franchises').map(frOut_) : [],
+    payouts: owner ? rows('Payouts').map(clean) : [],
+    notices: rows('Notices').map(function (n) { var o = l4out('Notices', n); o.push = bool_(o.push); o.active = bool_(o.active); o.sent = num_(o.sent); return o; }),
+    ads: rows('Ads').map(function (x) { var o = clean(x); o.active = bool_(o.active); o.ord = num_(o.ord); return o; }).sort(function (x, y) { return x.ord - y.ord; }),
+    agents: rows('Agents').map(clean),
+    feedback: rows('Feedback').map(function (f) { var o = clean(f); o.stars = num_(o.stars); return o; }),
+    reports: rows('Reports').map(function (r) { var o = clean(r); o.photos = String(r.photos || '').split(' ').filter(String); return o; }),
+    config: owner ? publicConfig_() : {},
+    configRaw: owner ? (function () { var c = config(), r = {}; for (var k in c) if (k !== 'hookKey') r[k] = c[k]; return r; })() : {},
+    topups: owner ? rows('Topups').filter(function (t) { return t.status === 'pending' || String(t.t) >= since; }).map(function (t) { var o = clean(t); o.amt = num_(o.amt); return o; }) : [],
+    live: rows('Sessions').filter(function (s) { return s.status === 'charging' || s.status === 'idle'; }).map(function (s) {
+      var p = s.status === 'charging' ? progress_(s) : { kwh: num_(s.kwh), cost: num_(s.energy), soc: num_(s.soc), minsLeft: 0 };
+      var c = find('Customers', s.cust);
+      return { id: s.id, t: String(s.t).slice(0, 16), branch: s.branch, charger: s.charger, cpid: s.cpid, conn: num_(s.conn), type: s.type, cust: s.cust,
+        custName: s.cust === ADMIN_CUST ? 'ADMIN' : c ? c.name : s.cust, balance: c ? num_(c.balance) : 0, kwh: p.kwh, cost: s.cust === ADMIN_CUST ? 0 : p.cost, soc: p.soc,
+        minsLeft: p.minsLeft, status: s.status, by: String(s.flags || '').indexOf('admin:') === 0 ? String(s.flags).slice(6) : '' };
+    }),
+    admins: rows('Admins').map(function (x) { return { user: x.id, name: x.name, role: x.role }; }),
+    audit: owner ? rows('Audit').slice(-1500).reverse().map(clean) : []
+  };
+  var lm = new Date(); lm.setDate(1); lm.setMonth(lm.getMonth() - 1);
+  out.lastMonth = Utilities.formatDate(lm, tz_(), 'yyyy-MM');
+  return out;
+}
+function frOut_(f) { return { id: f.id, user: f.user, name: f.name, phone: f.phone, bank: f.bank, branches: String(f.branches || '').split(',').filter(String), fee: num_(f.fee), active: bool_(f.active), created: f.created }; }
+
+/** Save one record from the console: Branches · Chargers · Notices · Ads · Agents */
+function aSave(d, token) {
+  var a = admin_(token);
+  var t = d.table, r = d.row || {};
+  return withLock_(function () {
+    var isNew = !r.id || !find(t, r.id);
+    if (t === 'Branches') {
+      r.code = String(r.code || '').toUpperCase().trim();
+      if (!r.code || !(r.name || {}).lo) throw err_('missing');
+      if (rows('Branches').some(function (b) { return b.code === r.code && b.id !== r.id; })) throw err_('dup_code');
+      if (isNew) { r.id = r.code; r.created = now_(); }
+      var rec = l4in('Branches', r);
+      ['rating', 'rt', 'rn', 'chargers'].forEach(function (k) { delete rec[k]; });
+      isNew ? insert('Branches', rec) : update('Branches', r.id, rec);
+      audit_(a.id, isNew ? 'add' : 'edit', 'branch', r.code + ' ' + r.name.lo + ' · ₭' + r.price + '/kWh' + (bool_(r.parkFree) ? '' : ' · park ' + r.parkFee) + (bool_(r.visible) ? '' : ' · hidden'));
+      return { row: branchOut_(find('Branches', r.id), false) };
+    }
+    if (t === 'Chargers') {
+      r.no = String(r.no || '').toUpperCase().trim(); r.cpid = String(r.cpid || '').trim();
+      if (!r.no || !r.cpid || !find('Branches', r.branch)) throw err_('missing');
+      if (rows('Chargers').some(function (c) { return c.no === r.no && c.branch === r.branch && c.id !== r.id; })) throw err_('dup_no');
+      if (rows('Chargers').some(function (c) { return c.cpid === r.cpid && c.id !== r.id; })) throw err_('dup_cpid');
+      var conns = (r.conns || []).map(function (c, i) { return { n: i + 1, type: String(c.type), kw: num_(c.kw) }; });
+      if (!conns.length) throw err_('missing');
+      if (isNew) r.id = uid_('CH');
+      var rec2 = { id: r.id, branch: r.branch, no: r.no, cpid: r.cpid, model: r.model || '', conns: conns, maint: bool_(r.maint), created: isNew ? now_() : (find('Chargers', r.id) || {}).created };
+      isNew ? insert('Chargers', rec2) : update('Chargers', r.id, rec2);
+      audit_(a.id, isNew ? 'add' : 'edit', 'charger', r.no + ' · ' + r.cpid + ' · ' + conns.map(function (c) { return c.type + ' ' + c.kw + 'kW'; }).join(' + ') + (rec2.maint ? ' · maintenance' : ''));
+      return { row: rec2 };
+    }
+    if (t === 'Notices') {
+      if (!(r.title || {}).lo) throw err_('missing');
+      if (isNew) { r.id = uid_('N'); r.sent = 0; }
+      if (isNew && bool_(r.push)) { r.sent = rows('Customers').filter(function (c) { return c.status === 'active'; }).length; pushAll(r.title.lo, (r.body || {}).lo || ''); }
+      var rec3 = l4in('Notices', r);
+      isNew ? insert('Notices', rec3) : update('Notices', r.id, rec3);
+      audit_(a.id, isNew ? 'add' : 'edit', 'notice', r.title.lo + (isNew && bool_(r.push) ? ' · push ' + r.sent : '') + (bool_(r.active) ? '' : ' · off'));
+      return { row: r };
+    }
+    if (t === 'Ads') {
+      if (!r.img || !r.title) throw err_('missing');
+      if (isNew) { r.id = uid_('AD'); r.ord = rows('Ads').length + 1; }
+      var rec4 = { id: r.id, ord: num_(r.ord), title: r.title, img: r.img, link: r.link || '', active: bool_(r.active) };
+      isNew ? insert('Ads', rec4) : update('Ads', r.id, rec4);
+      if (d.order) d.order.forEach(function (id, i) { if (find('Ads', id)) update('Ads', id, { ord: i + 1 }); });
+      audit_(a.id, isNew ? 'add' : 'edit', 'ad', r.title);
+      return { row: rec4 };
+    }
+    if (t === 'Agents') {
+      update('Agents', r.id, { status: r.status, note: r.note || '' });
+      audit_(a.id, 'edit', 'agent', r.name + ' → ' + r.status);
+      return { row: clean(find('Agents', r.id)) };
+    }
+    throw err_('bad_table');
+  });
+}
+
+function aDel(d, token) {
+  var a = admin_(token, ['Franchises'].indexOf(d.table) >= 0);
+  var t = d.table, id = d.id;
+  if (['Branches', 'Chargers', 'Notices', 'Ads', 'Franchises'].indexOf(t) < 0) throw err_('bad_table');
+  return withLock_(function () {
+    if (t === 'Branches' && (rows('Chargers').some(function (c) { return c.branch === id; }) || rows('Sessions').some(function (s) { return s.branch === id; }))) throw err_('in_use');
+    var cur = find(t, id);
+    if (t === 'Chargers' && cur && rows('Sessions').some(function (s) { return s.cpid === cur.cpid && (s.status === 'charging' || s.status === 'idle'); })) throw err_('in_use');
+    removeRow(t, id);
+    audit_(a.id, 'del', t, cur ? (cur.code || cur.no || cur.title_lo || cur.title || cur.user || id) : id);
+    return {};
+  });
+}
+
+function aAddCust(d, token) {
+  var a = admin_(token);
+  return withLock_(function () {
+    var name = String(d.name || '').trim(), phone = cleanPhone_(d.phone);
+    if (!name || phk_(phone).length < 8) throw err_('missing');
+    if (String(d.pass || '').length < 6) throw err_('short_pass');
+    var dup = dupCheck_(name, phone);
+    if (dup.phone) throw err_('dup_phone');
+    if (dup.name) throw err_('dup_name');
+    var n = rows('Customers').length + 1001; while (find('Customers', 'C' + n)) n++;
+    var salt = newSalt_();
+    var c = { id: 'C' + n, name: name, phone: phone, salt: salt, passH: hashPw_(salt, d.pass), joined: now_(), status: 'active', balance: 0, points: 0, lang: 'lo', lastLogin: '' };
+    insert('Customers', c);
+    audit_(a.id, 'add', 'customer', c.id + ' ' + name);
+    return { row: { id: c.id, name: name, phone: phone, joined: c.joined, status: 'active', balance: 0, points: 0 } };
+  });
+}
+function aAdjust(d, token) {
+  var a = admin_(token, true);
+  var amt = Math.round(num_(d.amt));
+  if (!amt || !String(d.reason || '').trim()) throw err_('missing');
+  return withLock_(function () {
+    var c = find('Customers', d.id);
+    if (!c) throw err_('not_found');
+    if (num_(c.balance) + amt < 0) throw err_('negative', String(num_(c.balance)));
+    var me = ledgerAdd_(c.id, 'adjust', amt, 'ADJ-' + Date.now().toString(36).toUpperCase(), String(d.reason).slice(0, 300), a.id);
+    audit_(a.id, 'money', 'customer', c.id + ' ' + c.name + ' ' + (amt > 0 ? '+' : '') + amt + ' · ' + d.reason);
+    return { balance: num_(me.balance), ledger: clean(rows('Ledger').slice(-1)[0]) };
+  });
+}
+function aResetPw(d, token) {
+  var a = admin_(token);
+  var c = find('Customers', d.id);
+  if (!c) throw err_('not_found');
+  var tmp = String(Math.floor(100000 + Math.random() * 900000)), salt = newSalt_();
+  update('Customers', c.id, { salt: salt, passH: hashPw_(salt, tmp) });
+  dropAllTokens_('c', c.id);
+  audit_(a.id, 'edit', 'customer', c.id + ' ' + c.name + ' · reset password');
+  return { temp: tmp };
+}
+function aCustStatus(d, token) {
+  var a = admin_(token);
+  var c = find('Customers', d.id);
+  if (!c) throw err_('not_found');
+  var st = c.status === 'active' ? 'suspended' : 'active';
+  update('Customers', c.id, { status: st });
+  if (st === 'suspended') dropAllTokens_('c', c.id);
+  audit_(a.id, 'edit', 'customer', c.id + ' ' + c.name + ' → ' + st);
+  return { status: st };
+}
+
+function aFrSave(d, token) {
+  var a = admin_(token, true), r = d.row || {};
+  return withLock_(function () {
+    var isNew = !r.id || !find('Franchises', r.id);
+    var user = String(r.user || '').toLowerCase().replace(/\s/g, '');
+    if (!r.name || !user || !(r.branches || []).length) throw err_('missing');
+    if (rows('Franchises').some(function (f) { return f.user === user && f.id !== r.id; })) throw err_('dup_user');
+    var taken = (r.branches || []).filter(function (b) { return rows('Franchises').some(function (f) { return f.id !== r.id && String(f.branches).split(',').indexOf(b) >= 0; }); });
+    if (taken.length) throw err_('branch_taken', taken.join(','));
+    if ((isNew || r.pass) && String(r.pass || '').length < 6) throw err_('short_pass');
+    var cur = isNew ? {} : find('Franchises', r.id);
+    var rec = { id: isNew ? uid_('F') : r.id, user: user, name: r.name, phone: r.phone || '', bank: r.bank || '', branches: r.branches.join(','),
+      fee: Math.max(0, Math.min(100, num_(r.fee))), active: bool_(r.active), salt: cur.salt || '', passH: cur.passH || '', created: cur.created || now_() };
+    if (r.pass) { rec.salt = newSalt_(); rec.passH = hashPw_(rec.salt, r.pass); }
+    isNew ? insert('Franchises', rec) : update('Franchises', rec.id, rec);
+    if (!isNew && (r.pass || !rec.active || cur.branches !== rec.branches)) dropAllTokens_('p', rec.id); // sign them out so new rights apply at once
+    audit_(a.id, isNew ? 'add' : 'edit', 'franchise', user + ' · ' + rec.branches + ' · ' + rec.fee + '%' + (!isNew && num_(cur.fee) !== rec.fee ? ' (' + cur.fee + '% → ' + rec.fee + '%)' : '') + (r.pass ? ' · new password' : ''));
+    return { row: frOut_(rec) };
+  });
+}
+function settleOne_(f, month) {
+  var br = String(f.branches).split(',');
+  var ss = rows('Sessions').filter(function (s) { return s.status === 'done' && br.indexOf(s.branch) >= 0 && String(s.t).slice(0, 7) === month; });
+  var gross = ss.reduce(function (x, s) { return x + num_(s.total); }, 0), fee = Math.round(gross * num_(f.fee) / 100);
+  return { gross: gross, fee: fee, pay: gross - fee, n: ss.length };
+}
+function aMarkPaid(d, token) {
+  var a = admin_(token, true);
+  if (!d.ref) throw err_('missing');
+  return withLock_(function () {
+    var f = find('Franchises', d.id);
+    if (!f) throw err_('not_found');
+    if (rows('Payouts').some(function (p) { return p.fr === f.id && p.month === d.month; })) throw err_('already_paid');
+    var s = settleOne_(f, d.month);
+    var p = { id: uid_('P'), fr: f.id, month: d.month, gross: s.gross, fee: s.fee, pay: s.pay, paidAt: now_(), ref: String(d.ref), by: a.id };
+    insert('Payouts', p);
+    audit_(a.id, 'pay', 'franchise', f.user + ' · ' + d.month + ' · ₭' + s.pay + ' · ' + d.ref);
+    return { row: clean(p) };
+  });
+}
+
+function aConfig(d, token) {
+  var a = admin_(token, true), ch = [];
+  var allowed = Object.keys(CONFIG_DEFAULTS).filter(function (k) { return k !== 'hookKey'; });
+  return withLock_(function () {
+    var cur = config();
+    for (var k in (d.values || {})) {
+      if (allowed.indexOf(k) < 0) continue;
+      var v = d.values[k];
+      if (typeof CONFIG_DEFAULTS[k][0] === 'number') v = num_(v);
+      if (typeof CONFIG_DEFAULTS[k][0] === 'boolean') v = bool_(v);
+      if (String(cur[k]) !== String(v)) { ch.push(k + ': ' + cur[k] + ' → ' + v); setConfig(k, v); }
+    }
+    if (ch.length) audit_(a.id, 'edit', 'config', ch.join(' · '));
+    return { config: publicConfig_() };
+  });
+}
+function aAdminAdd(d, token) {
+  var a = admin_(token, true), user = String(d.user || '').trim();
+  if (!d.name || !user) throw err_('missing');
+  if (String(d.pass || '').length < 6) throw err_('short_pass');
+  if (find('Admins', user)) throw err_('dup_user');
+  var salt = newSalt_();
+  insert('Admins', { id: user, name: d.name, role: d.role === 'owner' ? 'owner' : 'staff', salt: salt, passH: hashPw_(salt, d.pass), created: now_() });
+  audit_(a.id, 'add', 'admin', user + ' · ' + d.role);
+  return { row: { user: user, name: d.name, role: d.role === 'owner' ? 'owner' : 'staff' } };
+}
+function aAdminDel(d, token) {
+  var a = admin_(token, true);
+  if (d.id === a.id) throw err_('no_right');
+  removeRow('Admins', d.id); dropAllTokens_('a', d.id);
+  audit_(a.id, 'del', 'admin', d.id);
+  return {};
+}
+function aMyPw(d, token) {
+  var a = admin_(token);
+  if (!checkPw_(a, d.cur)) throw err_('bad_pass');
+  if (String(d.pass || '').length < 6) throw err_('short_pass');
+  var salt = newSalt_();
+  update('Admins', a.id, { salt: salt, passH: hashPw_(salt, d.pass) });
+  dropAllTokens_('a', a.id);
+  audit_(a.id, 'edit', 'admin', a.id + ' · password');
+  return { token: issueToken_('a', a.id) };
+}
+function aUpload(d, token) { var a = admin_(token); return { url: saveImage_(d.data, 'ad') }; }
+
+/** Answer feedback / a problem report: status + reply; the reply lands in the customer's bell. */
+function aReply(d, token) {
+  var a = admin_(token);
+  var t = d.kind === 'rp' ? 'Reports' : 'Feedback';
+  var x = find(t, d.id);
+  if (!x) throw err_('not_found');
+  update(t, x.id, { status: d.status, reply: d.reply || '' });
+  if (d.reply && d.reply !== x.reply) insert('Inbox', { id: uid_('M'), t: now_(), cust: x.cust, title: d.kind === 'rp' ? 'ຕອບກັບການແຈ້ງບັນຫາ' : 'ຕອບກັບຄຳຄິດເຫັນ', body: d.reply, read: false });
+  audit_(a.id, 'edit', t, x.id + ' → ' + d.status);
+  return {};
+}
+
+/** Until BCEL One is connected: customer transfers to the company account with the reference
+ *  code → admin checks the bank and confirms here → the money lands in the wallet (once). */
+function aTopupConfirm(d, token) {
+  var a = admin_(token, true);
+  var t = find('Topups', d.id);
+  if (!t) throw err_('not_found');
+  if (d.reject) { if (t.status === 'pending') update('Topups', t.id, { status: 'cancel' }); audit_(a.id, 'money', 'topup', t.id + ' rejected'); return { status: 'cancel' }; }
+  topupPaid_(t.id, String(d.bankRef || 'manual:' + a.id));
+  audit_(a.id, 'money', 'topup', t.id + ' · ' + t.cust + ' · +' + t.amt + ' · ' + (d.bankRef || ''));
+  return { status: 'paid', balance: num_(find('Customers', t.cust).balance) };
+}

@@ -1,0 +1,85 @@
+/**
+ * TREE CHARGE — Apps Script web app
+ * ─────────────────────────────────────────────────────────────
+ *   …/exec                 → customer app (App.html)
+ *   …/exec?c=TCA01-1       → customer app opened from the QR on a connector
+ *   …/exec?page=admin      → admin console (Admin.html)
+ *   …/exec?page=partner    → franchise portal (Partner.html)
+ *   POST …/exec            → hooks for OCPP server / BCEL One / (later) SMS reports
+ * Every page talks to the server through one function: api(action, data, token).
+ */
+
+function doGet(e) {
+  var p = (e && e.parameter) || {};
+  var file = p.page === 'admin' ? 'AdminUI' : p.page === 'partner' ? 'PartnerUI' : 'App';   // HTML file names (must differ from the .gs names)
+  var t;
+  try { t = HtmlService.createTemplateFromFile(file); }
+  catch (x) {
+    return HtmlService.createHtmlOutput('<div style="font:16px sans-serif;padding:24px;line-height:1.6"><b>TREE CHARGE</b><br>ບໍ່ພົບໄຟລ໌ HTML ຊື່ <b>' + file +
+      '</b> ໃນ Apps Script · ไม่พบไฟล์ HTML ชื่อ <b>' + file + '</b><br>ກະລຸນາສ້າງໄຟລ໌ HTML ຊື່ນີ້ ແລ້ວ Deploy ເວີຊັນໃໝ່ · กรุณาสร้างไฟล์ HTML ชื่อนี้ แล้ว Deploy เวอร์ชันใหม่</div>')
+      .setTitle('TREE CHARGE').addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+  t.url = ScriptApp.getService().getUrl();
+  t.qr = String(p.c || '').replace(/[^A-Za-z0-9\-_]/g, '').slice(0, 40);
+  t.boot = JSON.stringify({ q: t.qr, url: t.url }).replace(/</g, '\\u003c');
+  var title = file === 'AdminUI' ? 'TREE CHARGE · Admin' : file === 'PartnerUI' ? 'TREE CHARGE · Partner' : 'TREE CHARGE Station';
+  return t.evaluate()
+    .setTitle(title)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function include(name) { return HtmlService.createHtmlOutputFromFile(name).getContent(); }
+
+/** Single entry point for all three web pages (google.script.run.api). */
+function api(action, data, token) {
+  data = data || {};
+  try {
+    var fn = routes_()[action];
+    if (!fn) throw err_('unknown_action');
+    var out = fn(data, token) || {};
+    out.ok = true;
+    return JSON.parse(JSON.stringify(out)); // plain data only
+  } catch (e) {
+    if (e && e.code) return { ok: false, err: e.code, msg: e.msg || '' };
+    console.error(action, e && e.stack || e);
+    return { ok: false, err: 'server', msg: String(e && e.message || e) };
+  }
+}
+function err_(code, msg) { return { code: code, msg: msg || '' }; }
+
+// built on first use: Apps Script loads files one by one, so functions from later files
+// don't exist yet while this file's top level runs
+function routes_() { return {
+  // public
+  'pub.catalog': pubCatalog, 'pub.charger': pubCharger,
+  // customer
+  'c.otp': cOtp, 'c.register': cRegister, 'c.login': cLogin, 'c.logout': cLogout, 'c.forgot': cForgot,
+  'c.me': cMe, 'c.history': cHistory, 'c.inbox': cInbox, 'c.inboxRead': cInboxRead,
+  'c.profile': cProfile, 'c.password': cPassword, 'c.redeem': cRedeem,
+  'c.topup': cTopup, 'c.topupStatus': cTopupStatus, 'c.topupDemoPay': cTopupDemoPay,
+  'c.start': cStart, 'c.status': cStatus, 'c.stop': cStop, 'c.unplug': cUnplug, 'c.rate': cRate,
+  'c.feedback': cFeedback, 'c.report': cReport, 'c.agent': cAgent, 'c.upload': cUpload,
+  // admin
+  'a.login': aLogin, 'a.logout': aLogout, 'a.load': aLoad, 'a.save': aSave, 'a.del': aDel,
+  'a.adjust': aAdjust, 'a.resetPw': aResetPw, 'a.custStatus': aCustStatus, 'a.addCust': aAddCust,
+  'a.frSave': aFrSave, 'a.markPaid': aMarkPaid, 'a.config': aConfig, 'a.adminAdd': aAdminAdd, 'a.adminDel': aAdminDel,
+  'a.myPw': aMyPw, 'a.chargeStart': aChargeStart, 'a.chargeStop': aChargeStop, 'a.topupConfirm': aTopupConfirm, 'a.upload': aUpload, 'a.reply': aReply,
+  // franchise partner
+  'p.login': pLogin, 'p.logout': pLogout, 'p.data': pData
+}; }
+
+/** Hooks from outside systems. Body: JSON { key, kind: 'ocpp' | 'bcel', ... } */
+function doPost(e) {
+  var body = {};
+  try { body = JSON.parse(e.postData.contents || '{}'); } catch (x) {}
+  var out;
+  try {
+    if (!config().hookKey || body.key !== config().hookKey) throw err_('forbidden');
+    if (body.kind === 'ocpp') out = ocppHook(body);
+    else if (body.kind === 'bcel') out = bcelHook(body);
+    else throw err_('unknown_kind');
+    out = { ok: true, result: out };
+  } catch (x) { out = { ok: false, err: x.code || String(x) }; }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}

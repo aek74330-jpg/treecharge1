@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b4f1d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+Lao:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--bg:#f3f8f1;--card:#fff;--sunk:#e8efe5;--ink:#132019;--muted:#5d6b62;--line:#dbe5d7;--volt:#1b8f32;--volt-ink:#136b26;--soft:#e2f5dc;--grad:linear-gradient(135deg,#0b4f1d,#178a30,#5cbf2e);
+--blue:#1d5bd0;--bad:#c8372d;--bad-soft:#fde5e1;--warn:#b86e00;--warn-soft:#fff1d6;--amber:#c98a00;--f:"Noto Sans Lao","Noto Sans Thai",system-ui,sans-serif;--fd:"Bai Jamjuree","Noto Sans Lao","Noto Sans Thai",system-ui,sans-serif;--fm:"IBM Plex Mono",ui-monospace,monospace;--r:16px;--sh:0 1px 3px rgba(10,40,20,.08),0 6px 18px rgba(10,40,20,.06)}
+[data-theme=dark]{--bg:#0b110d;--card:#151d18;--sunk:#1c2620;--ink:#e7f0e8;--muted:#9aaa9f;--line:#27342c;--volt:#3fbf55;--volt-ink:#79dc8c;--soft:#163a20;--blue:#80a8ff;--bad:#ff7d6e;--bad-soft:#3d1a16;--warn:#f0a63a;--warn-soft:#3a2a0e;--sh:0 1px 2px rgba(0,0,0,.4)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--f);font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+.mono{font-family:var(--fm);font-variant-numeric:tabular-nums}
+#app{max-width:520px;margin:0 auto;min-height:100%;position:relative;display:flex;flex-direction:column}
+.hdr{position:sticky;top:0;z-index:30;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
+.hdr img{width:38px;height:38px;object-fit:contain}
+.brand{display:flex;flex-direction:column;line-height:1.05;min-width:0}
+.brand b{font-family:var(--fd);font-size:15px;white-space:nowrap}
+.brand small{font-size:9.5px;letter-spacing:2.6px;color:var(--volt);font-weight:700}
+.sp{flex:1}
+.ib{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;cursor:pointer;position:relative;flex:none;padding:0}
+.ib .dot{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:#e0533f;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px;border:2px solid var(--card)}
+.lb{height:36px;border-radius:18px;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;gap:6px;padding:0 10px;cursor:pointer;font-size:13px;font-weight:600}
+.lb img{width:22px;height:15px;border-radius:2px;object-fit:cover}
+main{flex:1;padding:14px 14px 110px;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}
+.pad{padding:14px 16px}
+h1{font-family:var(--fd);font-size:22px;line-height:1.25;margin:0}
+h2{font-size:17px;margin:0}
+.muted{color:var(--muted)} .small{font-size:13px} .xs{font-size:12px}
+.row{display:flex;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column;gap:6px}
+.btn{height:50px;border-radius:14px;border:0;background:var(--volt);color:#fff;font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 16px}
+[data-theme=dark] .btn{color:#062010}
+.btn.grad{background:var(--grad);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.out{background:transparent;color:var(--volt-ink);border:1.5px solid var(--volt-ink)}
+.btn.red{background:var(--bad);color:#fff}
+.btn.sm{height:38px;font-size:14px;border-radius:11px;width:auto}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;color:var(--blue);font-weight:600;cursor:pointer;padding:6px 0;font-size:14px}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-size:14px;font-weight:600}
+.inp{height:52px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);padding:0 14px;font-size:16px;width:100%}
+.inp:focus{outline:none;border-color:var(--volt)}
+textarea.inp{height:auto;min-height:96px;padding:12px 14px;resize:vertical}
+.pw{position:relative}.pw .inp{padding-right:72px}.pw button{position:absolute;right:8px;top:8px;height:36px;border:0;background:none;color:var(--blue);font-weight:600;cursor:pointer}
+.err{background:var(--bad-soft);color:var(--bad);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600}
+.okbox{background:var(--soft);color:var(--volt-ink);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:38px;padding:0 14px;border-radius:19px;border:1.5px solid var(--line);background:var(--card);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--volt);border-color:var(--volt);color:#fff}
+.search{display:flex;align-items:center;gap:8px;height:48px;border-radius:24px;border:1.5px solid var(--line);background:var(--card);padding:0 8px 0 14px}
+.search input{border:0;outline:0;background:transparent;flex:1;min-width:0;font-size:15px}
+.search input::-webkit-search-cancel-button{display:none}
+.x{width:28px;height:28px;border-radius:50%;border:0;background:var(--sunk);color:var(--muted);cursor:pointer;font-size:16px}
+.pill{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:12px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.p-free{background:var(--soft);color:var(--volt-ink)} .p-busy{background:var(--bad-soft);color:var(--bad)} .p-off{background:var(--sunk);color:var(--muted)} .p-blue{background:#e3ecfd;color:var(--blue)}
+[data-theme=dark] .p-blue{background:#17243f}
+.bcard{display:flex;flex-direction:column;gap:10px;padding:16px;cursor:pointer;text-align:left;width:100%;color:var(--ink);font:inherit}
+.stat{display:flex;gap:10px;align-items:stretch;padding:10px 12px;border-radius:12px}
+.stat.free{background:var(--soft);color:var(--volt-ink)} .stat.full{background:var(--bad-soft);color:var(--bad)} .stat.down{background:var(--sunk);color:var(--muted)}
+.gun{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:14px;background:var(--card);border:1px solid var(--volt-ink);color:var(--ink);font-size:13px;font-weight:600;font-family:var(--fm)}
+.stars{color:var(--amber);letter-spacing:1px}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:10px;background:var(--grad);color:#fff;font-size:11px;font-weight:700;vertical-align:2px;margin-left:4px}
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:520px;z-index:40;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 4px calc(8px + env(safe-area-inset-bottom,0px))}
+.nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);cursor:pointer;padding:4px 0}
+.nav button[aria-current=page]{color:var(--volt-ink);font-weight:700}
+.nav .scan{margin-top:-30px}
+.nav .scan span.o{width:64px;height:64px;border-radius:50%;background:var(--grad);display:grid;place-items:center;color:#fff;box-shadow:0 6px 18px rgba(20,120,40,.35);border:4px solid var(--card)}
+.wallet{background:var(--grad);color:#fff;border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.wallet .amt{font-family:var(--fm);font-size:32px;font-weight:600;line-height:1.1}
+.wchip{height:38px;padding:0 14px;border-radius:19px;border:1.5px solid #fff;background:rgba(255,255,255,.14);color:#fff;font-family:var(--fm);font-weight:600;cursor:pointer}
+.wchip[aria-pressed=true]{border-width:2.5px}
+.wbtn{height:48px;border-radius:13px;border:1.5px solid #fff;background:#fff;color:#126b27;font-weight:700;font-size:15px;cursor:pointer}
+.menu{display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 16px;border:0;border-bottom:1px solid var(--line);background:none;cursor:pointer;text-align:left;color:var(--ink);font-size:15px;width:100%}
+.mi:last-child{border-bottom:0}
+.mi .ic{width:38px;height:38px;border-radius:11px;background:var(--soft);color:var(--volt-ink);display:grid;place-items:center;flex:none}
+.mi .ic img{width:22px;height:15px;border-radius:2px}
+.mi .v{margin-left:auto;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:100px;z-index:90;background:var(--grad);color:#fff;padding:12px 16px;border-radius:14px;font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);width:calc(100% - 32px);max-width:480px}
+.sheet{position:fixed;inset:0;z-index:80;background:rgba(10,20,14,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet>div{width:100%;max-width:520px;background:var(--card);border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;max-height:88vh;overflow:auto}
+.overlay{position:fixed;inset:0;z-index:95;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px}
+.overlay.splash{background:var(--grad);color:#fff;animation:out .35s ease 2.35s forwards}
+.overlay.busy{background:var(--bg)}
+.ring{position:relative;width:168px;height:168px;display:grid;place-items:center}
+.ring svg{position:absolute;inset:0}
+.ring .logo{width:128px;height:128px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 8px 28px rgba(0,0,0,.2);animation:pop .7s ease both}
+.ring .logo img{width:96px;height:96px;object-fit:contain}
+@keyframes fill{from{stroke-dashoffset:390}to{stroke-dashoffset:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+@keyframes up{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes out{to{opacity:0;visibility:hidden}}
+@keyframes run{to{stroke-dashoffset:-24}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes ping{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+@keyframes bell{0%,60%,100%{transform:rotate(0)}10%{transform:rotate(14deg)}20%{transform:rotate(-12deg)}30%{transform:rotate(8deg)}40%{transform:rotate(-6deg)}}
+.ads{position:relative;border-radius:var(--r);overflow:hidden;aspect-ratio:16/9;max-width:100%;background:var(--sunk)}
+.ads img{width:100%;height:100%;object-fit:cover;display:block}
+.dots{display:flex;gap:6px;justify-content:center}.dots i{width:7px;height:7px;border-radius:4px;background:var(--line)}.dots i.on{width:20px;background:var(--volt)}
+#map{height:calc(100vh - 230px);min-height:360px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line)}
+.pinl{background:var(--card);color:var(--ink);border-radius:12px;padding:3px 8px;font-size:11.5px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2);transform:translate(-50%,-6px);position:absolute;left:50%;bottom:100%}
+.leaflet-div-icon{background:none;border:0}
+.prog{position:relative;width:220px;height:220px;margin:0 auto}
+.prog svg{width:100%;height:100%;transform:rotate(-90deg)}
+.prog .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv>div{background:var(--sunk);border-radius:12px;padding:10px 12px}
+.kv b{display:block;font-family:var(--fm);font-size:18px}
+.dl{display:flex;flex-direction:column}
+.dl>div{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.dl>div:last-child{border-bottom:0}
+.dl dt{color:var(--muted)} .dl dd{margin:0;font-weight:600;text-align:right}
+.alert{border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-weight:600;font-size:14px}
+.alert.warn{background:var(--warn-soft);color:var(--warn)} .alert.bad{background:var(--bad-soft);color:var(--bad)} .alert.ok{background:var(--soft);color:var(--volt-ink)}
+.starpick{display:flex;gap:6px;justify-content:center}.starpick button{background:none;border:0;font-size:36px;cursor:pointer;color:var(--line);padding:0}.starpick button.on{color:var(--amber)}
+.ph{display:flex;gap:8px;flex-wrap:wrap}.ph img{width:72px;height:72px;object-fit:cover;border-radius:10px}
+.ph label{width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--line);display:grid;place-items:center;color:var(--muted);cursor:pointer;font-size:12px;text-align:center}
+.seg{display:flex;background:var(--sunk);border-radius:12px;padding:4px}.seg button{flex:1;height:38px;border:0;border-radius:9px;background:none;font-weight:600;cursor:pointer;color:var(--muted)}.seg button[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:var(--sh)}
+.ncard{display:flex;gap:12px;padding:14px}
+.nic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;flex:none;font-weight:700}
+.loader{display:flex;justify-content:center;padding:40px}.loader i{width:34px;height:34px;border-radius:50%;border:4px solid var(--sunk);border-top-color:var(--volt);animation:spin 1s linear infinite}
+video{width:100%;border-radius:var(--r);background:#000;max-height:50vh;object-fit:cover}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"><div class="loader"><i></i></div></div>
+<script>var BOOT = <?!= boot ?>;</script>
+<script>
+/* words: [ລາວ, ไทย, English, 中文] */
+var W = {
+  welcome: ['ຍິນດີຕ້ອນຮັບເຂົ້າສູ່', 'ยินดีต้อนรับเข้าสู่', 'Welcome to', '欢迎来到'], hello: ['ສະບາຍດີ, ', 'สวัสดี, ', 'Hello, ', '您好，'], opening: ['ກຳລັງເປີດແອັບ…', 'กำลังเปิดแอป…', 'Opening…', '正在打开…'],
+  login: ['ເຂົ້າສູ່ລະບົບ', 'เข้าสู่ระบบ', 'Sign in', '登录'], register: ['ສະໝັກສະມາຊິກ', 'สมัครสมาชิก', 'Sign up', '注册'],
+  loginSub: ['ເບິ່ງສາຂາ, ເຕີມເງິນ ແລະ ສາກລົດດ້ວຍບັນຊີດຽວ', 'ดูสาขา เติมเงิน และชาร์จรถด้วยบัญชีเดียว', 'Stations, wallet and charging in one account', '一个账户即可查看站点、充值和充电'],
+  regSub: ['ໃສ່ຊື່, ເບີໂທ ແລະ ຕັ້ງລະຫັດຜ່ານ · ໃຊ້ໄດ້ທັນທີ', 'ใส่ชื่อ เบอร์โทร และตั้งรหัสผ่าน · ใช้ได้ทันที', 'Name, phone and a password · ready right away', '填写姓名、电话和密码 · 立即可用'],
+  idLabel: ['ຊື່ຜູ້ໃຊ້ ຫຼື ເບີໂທ', 'ชื่อผู้ใช้หรือเบอร์โทร', 'Name or phone', '用户名或电话'], name: ['ຊື່ຜູ້ໃຊ້ (ໃຊ້ເຂົ້າສູ່ລະບົບ)', 'ชื่อผู้ใช้ (ใช้เข้าสู่ระบบ)', 'User name (for signing in)', '用户名（用于登录）'],
+  phone: ['ເບີໂທລະສັບ', 'เบอร์โทรศัพท์', 'Phone number', '电话号码'], pass: ['ລະຫັດຜ່ານ', 'รหัสผ่าน', 'Password', '密码'], pass2: ['ຢືນຢັນລະຫັດຜ່ານ', 'ยืนยันรหัสผ่าน', 'Confirm password', '确认密码'],
+  show: ['ສະແດງ', 'แสดง', 'Show', '显示'], hide: ['ເຊື່ອງ', 'ซ่อน', 'Hide', '隐藏'], noAcc: ['ຍັງບໍ່ມີບັນຊີ?', 'ยังไม่มีบัญชี?', 'No account yet?', '还没有账户？'], haveAcc: ['ມີບັນຊີແລ້ວ?', 'มีบัญชีแล้ว?', 'Have an account?', '已有账户？'],
+  forgot: ['ລືມລະຫັດຜ່ານ?', 'ลืมรหัสผ่าน?', 'Forgot password?', '忘记密码？'], forgotTxt: ['ໂທຫາແອັດມິນເພື່ອຕັ້ງລະຫັດໃໝ່: ', 'โทรหาแอดมินเพื่อตั้งรหัสใหม่: ', 'Call the admin to reset it: ', '请致电管理员重置：'],
+  signingIn: ['ກຳລັງເຂົ້າສູ່ລະບົບ…', 'กำลังเข้าสู่ระบบ…', 'Signing in…', '正在登录…'], creating: ['ກຳລັງສ້າງບັນຊີ…', 'กำลังสร้างบัญชี…', 'Creating your account…', '正在创建账户…'],
+  qrBanner: ['ທ່ານສະແກນ QR ທີ່ຫົວສາກ ', 'คุณสแกน QR ที่หัวชาร์จ ', 'You scanned charger ', '您扫描了充电枪 '], qrBanner2: [' · ສະໝັກ ຫຼື ເຂົ້າສູ່ລະບົບກ່ອນ ແລ້ວຈະໄປໜ້າສາກ', ' · สมัครหรือเข้าสู่ระบบก่อน แล้วจะไปหน้าชาร์จ', ' · sign up or sign in first, then you go straight to charging', ' · 先注册或登录，然后直接进入充电'],
+  // errors
+  e_none: ['ບໍ່ພົບບັນຊີນີ້ · ກະລຸນາສະໝັກສະມາຊິກກ່ອນ', 'ไม่พบบัญชีนี้ · กรุณาสมัครสมาชิกก่อน', 'No account with that name or phone · please sign up first', '未找到此账户 · 请先注册'],
+  e_pass: ['ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ', 'รหัสผ่านไม่ถูกต้อง', 'Wrong password', '密码错误'], e_locked: ['ໃສ່ລະຫັດຜິດຫຼາຍເທື່ອ · ລອງໃໝ່ອີກ 15 ນາທີ', 'ใส่รหัสผิดหลายครั้ง · ลองใหม่ใน 15 นาที', 'Too many tries · try again in 15 minutes', '错误次数过多 · 请 15 分钟后再试'],
+  e_dupPhone: ['ເບີໂທນີ້ມີບັນຊີແລ້ວ · ກະລຸນາເຂົ້າສູ່ລະບົບ', 'เบอร์นี้มีบัญชีแล้ว · กรุณาเข้าสู่ระบบ', 'This phone already has an account · please sign in', '此电话已注册 · 请登录'],
+  e_dupName: ['ຊື່ນີ້ມີຄົນໃຊ້ແລ້ວ · ກະລຸນາໃຊ້ຊື່ອື່ນ', 'ชื่อนี้มีคนใช้แล้ว · กรุณาใช้ชื่ออื่น', 'That name is taken · please choose another', '用户名已被使用 · 请换一个'],
+  e_name: ['ກະລຸນາໃສ່ຊື່ (ຢ່າງໜ້ອຍ 2 ຕົວ)', 'กรุณาใส่ชื่อ (อย่างน้อย 2 ตัว)', 'Enter a name (2+ letters)', '请输入姓名（至少 2 个字）'], e_phone: ['ເບີໂທບໍ່ຖືກຕ້ອງ', 'เบอร์โทรไม่ถูกต้อง', 'Check the phone number', '电话号码有误'],
+  e_passShort: ['ລະຫັດຜ່ານຢ່າງໜ້ອຍ 6 ຕົວ', 'รหัสผ่านอย่างน้อย 6 ตัว', 'Password needs 6+ characters', '密码至少 6 位'], e_pass2: ['ລະຫັດຜ່ານທັງສອງບໍ່ຕົງກັນ', 'รหัสผ่านทั้งสองไม่ตรงกัน', 'The passwords do not match', '两次密码不一致'],
+  e_suspended: ['ບັນຊີນີ້ຖືກລະງັບ · ຕິດຕໍ່ແອັດມິນ', 'บัญชีนี้ถูกระงับ · ติดต่อแอดมิน', 'This account is suspended · contact us', '此账户已停用 · 请联系我们'],
+  e_auth: ['ກະລຸນາເຂົ້າສູ່ລະບົບອີກຄັ້ງ', 'กรุณาเข้าสู่ระบบอีกครั้ง', 'Please sign in again', '请重新登录'], e_network: ['ເຊື່ອມຕໍ່ບໍ່ໄດ້ · ກວດອິນເຕີເນັດແລ້ວລອງໃໝ່', 'เชื่อมต่อไม่ได้ · ตรวจอินเทอร์เน็ตแล้วลองใหม่', 'No connection · check the internet and try again', '无法连接 · 请检查网络'],
+  e_server: ['ລະບົບຂັດຂ້ອງ · ລອງໃໝ່ອີກຄັ້ງ', 'ระบบขัดข้อง · ลองใหม่อีกครั้ง', 'Something went wrong · try again', '系统出错 · 请重试'],
+  e_noMoney: ['ເງິນໃນກະເປົາ ₭0 · ເຕີມເງິນກ່ອນຈຶ່ງສາກໄດ້', 'เงินในกระเป๋า ₭0 · เติมเงินก่อนจึงชาร์จได้', 'Wallet is ₭0 · top up first', '钱包余额 ₭0 · 请先充值'],
+  e_busy: ['ຫົວນີ້ກຳລັງມີຄົນໃຊ້ · ເລືອກຫົວອື່ນ', 'หัวนี้มีคนใช้อยู่ · เลือกหัวอื่น', 'This gun is in use · pick another', '此枪正在使用 · 请选其他'],
+  e_offline: ['ຫົວນີ້ອອບໄລນ໌ ໃຊ້ບໍ່ໄດ້ຕອນນີ້', 'หัวนี้ออฟไลน์ ใช้ไม่ได้ตอนนี้', 'This gun is offline right now', '此枪离线，暂不可用'],
+  e_noCharger: ['ບໍ່ພົບຫົວສາກນີ້ · ກວດເບີທີ່ຕິດຢູ່ຫົວສາກ', 'ไม่พบหัวชาร์จนี้ · ตรวจเบอร์ที่ติดที่หัวชาร์จ', 'Charger not found · check the code on the gun', '未找到该充电枪 · 请核对枪上的编号'],
+  e_already: ['ທ່ານກຳລັງສາກຢູ່ແລ້ວ', 'คุณกำลังชาร์จอยู่แล้ว', 'You are already charging', '您正在充电'], e_amount: ['ຈຳນວນເງິນບໍ່ຖືກ', 'จำนวนเงินไม่ถูกต้อง', 'Check the amount', '金额有误'],
+  e_tooManyPending: ['ມີລາຍການລໍຖ້າຢືນຢັນຫຼາຍແລ້ວ · ລໍຖ້າແອັດມິນກ່ອນ', 'มีรายการรอยืนยันหลายรายการ · รอแอดมินก่อน', 'Several top-ups are waiting · please wait for confirmation', '多笔充值待确认 · 请稍候'],
+  e_chargerNoAnswer: ['ຕູ້ບໍ່ຕອບ · ລອງໃໝ່ ຫຼື ໃຊ້ຫົວອື່ນ', 'ตู้ไม่ตอบสนอง · ลองใหม่หรือใช้หัวอื่น', 'The charger did not answer · try again', '充电桩无响应 · 请重试'],
+  e_points: ['ແຕ້ມບໍ່ພໍ', 'แต้มไม่พอ', 'Not enough points', '积分不足'], e_empty: ['ກະລຸນາໃສ່ຂໍ້ມູນ', 'กรุณากรอกข้อมูล', 'Please fill this in', '请填写'], e_imageBig: ['ຮູບໃຫຍ່ເກີນ', 'รูปใหญ่เกินไป', 'Image too large', '图片过大'],
+  // header + tabs
+  tBranches: ['ສາຂາ', 'สาขา', 'Stations', '站点'], tMap: ['ແຜນທີ່', 'แผนที่', 'Map', '地图'], tScan: ['ສະແກນສາກ', 'สแกนชาร์จ', 'Scan', '扫码'], tHistory: ['ປະຫວັດ', 'ประวัติ', 'History', '记录'], tMe: ['ຂ້ອຍ', 'ฉัน', 'Me', '我的'],
+  back: ['ກັບຄືນ', 'กลับ', 'Back', '返回'], lang: ['ພາສາ', 'ภาษา', 'Language', '语言'],
+  // branches
+  nearest: ['ສາຂາໃກ້ທ່ານທີ່ສຸດ', 'สาขาใกล้คุณที่สุด', 'Nearest station', '离您最近的站点'], gps: ['ອີງຕາມທີ່ຕັ້ງປັດຈຸບັນ · ອັບເດດເມື່ອທ່ານເຄື່ອນທີ່', 'อิงตามตำแหน่งปัจจุบัน · อัปเดตเมื่อคุณเคลื่อนที่', 'From your current location · updates as you move', '基于当前位置 · 随移动更新'],
+  noGps: ['ເປີດການເຂົ້າເຖິງທີ່ຕັ້ງເພື່ອຫາສາຂາໃກ້ທ່ານ', 'เปิดการเข้าถึงตำแหน่งเพื่อหาสาขาใกล้คุณ', 'Allow location to find the nearest station', '允许定位以查找最近站点'],
+  nearMoved: ['ສາຂາໃກ້ທ່ານທີ່ສຸດຕອນນີ້: ', 'สาขาใกล้คุณที่สุดตอนนี้: ', 'Nearest station now: ', '现在离您最近：'], directions: ['ນຳທາງໄປ', 'นำทางไป', 'Directions', '导航'], viewBranch: ['ເບິ່ງສາຂາ', 'ดูสาขา', 'View station', '查看站点'],
+  nearFree: ['ໃກ້ສຸດທີ່ມີຫົວວ່າງ: ', 'ใกล้สุดที่มีหัวว่าง: ', 'Nearest with a free gun: ', '最近有空闲枪：'], search: ['ຄົ້ນຫາສາຂາ ຫຼື ເມືອງ', 'ค้นหาสาขาหรือเมือง', 'Search stations or districts', '搜索站点或城区'],
+  results: ['ຜົນການຄົ້ນຫາ · ', 'ผลการค้นหา · ', 'Results · ', '搜索结果 · '], noResult: ['ບໍ່ພົບສາຂາທີ່ກົງກັບ', 'ไม่พบสาขาที่ตรงกับ', 'No station matches', '没有匹配的站点'],
+  fFree: ['ວ່າງຕອນນີ້', 'ว่างตอนนี้', 'Free now', '现在空闲'], fTop: ['ດາວສູງສຸດ', 'ดาวสูงสุด', 'Top rated', '评分最高'], f24: ['ເປີດ 24 ຊມ.', 'เปิด 24 ชม.', 'Open 24 h', '24 小时'],
+  allBranches: ['ສາຂາທັງໝົດ', 'สาขาทั้งหมด', 'All stations', '全部站点'], km: ['ກມ.', 'กม.', 'km', '公里'], drive: ['ຂັບລົດ ~', 'ขับรถ ~', 'drive ~', '驾车约'], min: [' ນາທີ', ' นาที', ' min', ' 分钟'],
+  freeOf: ['ວ່າງ {a} ຫົວ ຈາກທັງໝົດ {b} ຫົວ', 'ว่าง {a} หัว จากทั้งหมด {b} หัว', '{a} of {b} guns free', '{b} 个枪中 {a} 个空闲'], full: ['ເຕັມທຸກຫົວ', 'เต็มทุกหัว', 'All guns busy', '全部占用'],
+  soon: ['ວ່າງໄວສຸດ: ', 'ว่างเร็วสุด: ', 'Free soonest: ', '最快空闲：'], inAbout: ['ອີກປະມານ ', 'อีกประมาณ ', 'in about ', '约 '], down: ['ອອບໄລນ໌ · ໃຊ້ບໍ່ໄດ້ຕອນນີ້', 'ออฟไลน์ · ใช้ไม่ได้ตอนนี้', 'Offline · not usable now', '离线 · 暂不可用'],
+  freeGuns: ['ຫົວທີ່ວ່າງ (ເບີຕູ້ · ປະເພດ)', 'หัวที่ว่าง (เบอร์ตู้ · ประเภท)', 'Free guns (charger · type)', '空闲枪（编号 · 类型）'], nearestTag: ['ໃກ້ສຸດ', 'ใกล้สุด', 'Nearest', '最近'],
+  perKwh: ['/kWh', '/kWh', '/kWh', '/kWh'], reviews: [' ລີວິວ', ' รีวิว', ' reviews', ' 条评价'], noReviews: ['ຍັງບໍ່ມີລີວິວ', 'ยังไม่มีรีวิว', 'No reviews yet', '暂无评价'],
+  available: ['ວ່າງ', 'ว่าง', 'Free', '空闲'], charging: ['ກຳລັງສາກ', 'กำลังชาร์จ', 'Charging', '充电中'], offline: ['ອອບໄລນ໌', 'ออฟไลน์', 'Offline', '离线'],
+  parkFree: ['ຈອດຟຣີ', 'จอดฟรี', 'Free parking', '免费停车'], parkFee: ['ຄ່າຈອດຫຼັງສາກເຕັມ ', 'ค่าจอดหลังชาร์จเต็ม ', 'Parking after full ', '充满后停车费 '], perMin: ['/ນາທີ', '/นาที', '/min', '/分钟'], freeMins: [' (ຟຣີ {n} ນາທີທຳອິດ)', ' (ฟรี {n} นาทีแรก)', ' (first {n} min free)', '（前 {n} 分钟免费）'],
+  hours: ['ເວລາເປີດ', 'เวลาเปิด', 'Hours', '营业时间'], open24: ['ເປີດ 24 ຊມ.', 'เปิด 24 ชม.', 'Open 24 h', '24 小时营业'], price: ['ລາຄາ', 'ราคา', 'Price', '价格'], distance: ['ໄລຍະທາງ', 'ระยะทาง', 'Distance', '距离'], call: ['ໂທ', 'โทร', 'Call', '致电'],
+  guns: ['ຫົວສາກ', 'หัวชาร์จ', 'Guns', '充电枪'], minsLeft: ['ອີກ {n} ນາທີ', 'อีก {n} นาที', '{n} min left', '还剩 {n} 分钟'], scanHere: ['ສະແກນ QR ທີ່ຫົວສາກເພື່ອເລີ່ມ', 'สแกน QR ที่หัวชาร์จเพื่อเริ่ม', 'Scan the QR on a gun to start', '扫描枪上的二维码开始'],
+  // wallet / topup
+  wallet: ['ກະເປົາເງິນ TREE', 'กระเป๋าเงิน TREE', 'TREE wallet', 'TREE 钱包'], walletSub: ['ຈ່າຍໄດ້ທຸກສາຂາ', 'จ่ายได้ทุกสาขา', 'Pay at every station', '所有站点通用'], topup: ['ເຕີມເງິນ', 'เติมเงิน', 'Top up', '充值'],
+  topupBy: ['ເຕີມເງິນ {a} ຜ່ານ QR ທະນາຄານ', 'เติมเงิน {a} ผ่าน QR ธนาคาร', 'Top up {a} by bank QR', '通过银行二维码充值 {a}'], other: ['ຈຳນວນອື່ນ', 'จำนวนอื่น', 'Other amount', '其他金额'],
+  minMax: ['ຕ່ຳສຸດ {a} · ສູງສຸດ {b}', 'ต่ำสุด {a} · สูงสุด {b}', 'Min {a} · max {b}', '最低 {a} · 最高 {b}'], payTitle: ['ໂອນເງິນເຂົ້າບັນຊີ TREE CHARGE', 'โอนเงินเข้าบัญชี TREE CHARGE', 'Transfer to TREE CHARGE', '转账至 TREE CHARGE'],
+  payStep1: ['ເປີດ BCEL One → ໂອນເງິນເຂົ້າບັນຊີລຸ່ມນີ້', 'เปิด BCEL One → โอนเงินเข้าบัญชีด้านล่าง', 'Open BCEL One → transfer to the account below', '打开 BCEL One → 转账到下方账户'],
+  payStep2: ['ໃສ່ເລກອ້າງອີງນີ້ໃນຊ່ອງໝາຍເຫດ', 'ใส่เลขอ้างอิงนี้ในช่องหมายเหตุ', 'Put this reference in the note', '在备注中填写此参考号'], payStep3: ['ເງິນຈະເຂົ້າກະເປົາເມື່ອແອັດມິນຢືນຢັນ (ປົກກະຕິບໍ່ເກີນ 10 ນາທີ)', 'เงินจะเข้ากระเป๋าเมื่อแอดมินยืนยัน (ปกติไม่เกิน 10 นาที)', 'Money arrives once confirmed (usually within 10 minutes)', '确认后到账（通常 10 分钟内）'],
+  bank: ['ທະນາຄານ', 'ธนาคาร', 'Bank', '银行'], account: ['ເລກບັນຊີ', 'เลขบัญชี', 'Account', '账号'], holder: ['ຊື່ບັນຊີ', 'ชื่อบัญชี', 'Name', '户名'], ref: ['ເລກອ້າງອີງ', 'เลขอ้างอิง', 'Reference', '参考号'], amount: ['ຈຳນວນ', 'จำนวน', 'Amount', '金额'],
+  copy: ['ສຳເນົາ', 'คัดลอก', 'Copy', '复制'], copied: ['ສຳເນົາແລ້ວ', 'คัดลอกแล้ว', 'Copied', '已复制'], waiting: ['ລໍຖ້າຢືນຢັນ…', 'รอยืนยัน…', 'Waiting for confirmation…', '等待确认…'], demoPay: ['ຈ່າຍຈຳລອງ (ທົດລອງລະບົບ)', 'จ่ายจำลอง (ทดลองระบบ)', 'Pay (demo)', '模拟付款'],
+  cancelTopup: ['ຍົກເລີກລາຍການນີ້', 'ยกเลิกรายการนี้', 'Cancel this top-up', '取消此充值'], paid: ['ເງິນເຂົ້າກະເປົາແລ້ວ', 'เงินเข้ากระเป๋าแล้ว', 'Money added to your wallet', '已到账'], balanceNow: ['ຍອດເງິນຕອນນີ້ ', 'ยอดเงินตอนนี้ ', 'Balance now ', '当前余额 '],
+  pendingN: ['ລໍຖ້າຢືນຢັນ', 'รอยืนยัน', 'Waiting', '待确认'], done: ['ສຳເລັດ', 'เสร็จสิ้น', 'Done', '完成'],
+  points: [' ແຕ້ມ', ' แต้ม', ' points', ' 积分'], pointsRule: ['ທຸກ 1 kWh = {a} ແຕ້ມ · {b} ແຕ້ມ ແລກ {c}', 'ทุก 1 kWh = {a} แต้ม · {b} แต้ม แลก {c}', '1 kWh = {a} pts · {b} pts = {c}', '每 1 kWh = {a} 分 · {b} 分换 {c}'], redeem: ['ແລກ', 'แลก', 'Redeem', '兑换'], redeemed: ['ແລກແຕ້ມແລ້ວ · ເງິນເຂົ້າກະເປົາ', 'แลกแต้มแล้ว · เงินเข้ากระเป๋า', 'Points redeemed into your wallet', '积分已兑换到钱包'],
+  // scan + charge
+  scanTitle: ['ສະແກນ QR ທີ່ຫົວສາກ', 'สแกน QR ที่หัวชาร์จ', 'Scan the QR on the gun', '扫描枪上的二维码'], scanHint: ['ສ່ອງກ້ອງໃສ່ QR · ຫຼື ພິມເບີທີ່ຕິດຢູ່ຫົວສາກ ເຊັ່ນ A-01-1', 'ส่องกล้องที่ QR · หรือพิมพ์เบอร์ที่ติดที่หัวชาร์จ เช่น A-01-1', 'Point the camera at the QR · or type the code on the gun, e.g. A-01-1', '对准二维码 · 或输入枪上的编号，如 A-01-1'],
+  noCam: ['ເປີດກ້ອງໃນແອັບບໍ່ໄດ້ · ໃຊ້ກ້ອງຂອງໂທລະສັບສະແກນ QR ກໍໄດ້ ຫຼື ພິມເບີ', 'เปิดกล้องในแอปไม่ได้ · ใช้กล้องของโทรศัพท์สแกน QR ก็ได้ หรือพิมพ์เบอร์', 'Camera not available here · use your phone camera on the QR, or type the code', '无法在此打开相机 · 可用手机相机扫码或输入编号'],
+  codePh: ['ເບີຫົວສາກ ເຊັ່ນ A-01-1', 'เบอร์หัวชาร์จ เช่น A-01-1', 'Gun code, e.g. A-01-1', '枪编号，如 A-01-1'], go: ['ຕໍ່ໄປ', 'ต่อไป', 'Next', '下一步'], pickGun: ['ເລືອກຫົວສາກ', 'เลือกหัวชาร์จ', 'Pick a gun', '选择充电枪'],
+  ready: ['ພ້ອມສາກ', 'พร้อมชาร์จ', 'Ready to charge', '准备充电'], plugIn: ['ສຽບຫົວສາກເຂົ້າລົດໃຫ້ແໜ້ນ ແລ້ວກົດເລີ່ມສາກ', 'เสียบหัวชาร์จเข้ารถให้แน่น แล้วกดเริ่มชาร์จ', 'Plug the gun firmly into the car, then tap Start', '将充电枪插好后点击开始'],
+  start: ['ເລີ່ມສາກ', 'เริ่มชาร์จ', 'Start charging', '开始充电'], starting: ['ກຳລັງເລີ່ມ…', 'กำลังเริ่ม…', 'Starting…', '正在启动…'], payFrom: ['ຈ່າຍຈາກກະເປົາ · ຫັກຕາມໄຟທີ່ສາກໄດ້ແທ້', 'จ่ายจากกระเป๋า · หักตามไฟที่ชาร์จได้จริง', 'Paid from your wallet · only for the energy you get', '从钱包支付 · 按实际电量扣费'],
+  kwhNow: ['ໄຟທີ່ສາກໄດ້', 'ไฟที่ชาร์จได้', 'Energy', '已充电量'], costNow: ['ຄ່າສາກຕອນນີ້', 'ค่าชาร์จตอนนี้', 'Cost so far', '当前费用'], leftWallet: ['ເງິນເຫຼືອໃນກະເປົາ', 'เงินเหลือในกระเป๋า', 'Wallet left', '钱包剩余'], elapsed: ['ເວລາສາກ', 'เวลาชาร์จ', 'Time', '时长'],
+  timeLeft: ['ຄາດວ່າເຕັມອີກ', 'คาดว่าเต็มอีก', 'Full in about', '预计充满'], stop: ['ຢຸດສາກ', 'หยุดชาร์จ', 'Stop charging', '停止充电'], stopAsk: ['ຢຸດສາກ ແລະ ຈ່າຍເງິນເລີຍບໍ?', 'หยุดชาร์จและจ่ายเงินเลยไหม?', 'Stop and pay now?', '停止并付款？'], stopYes: ['ຢຸດ ແລະ ຈ່າຍ', 'หยุดและจ่าย', 'Stop and pay', '停止并付款'], keep: ['ສາກຕໍ່', 'ชาร์จต่อ', 'Keep charging', '继续充电'],
+  stopNote: ['ຖ້າຢຸດແລ້ວ ຕ້ອງສະແກນໃໝ່ຈຶ່ງສາກຕໍ່ໄດ້', 'ถ้าหยุดแล้ว ต้องสแกนใหม่จึงชาร์จต่อได้', 'After stopping you need to scan again to charge more', '停止后需重新扫码才能继续'],
+  nearAlert: ['ລົດໃກ້ສາກເຕັມແລ້ວ · ກະລຸນາກັບມາທີ່ລົດ', 'รถใกล้ชาร์จเต็มแล้ว · กรุณากลับมาที่รถ', 'Almost full · please head back to your car', '即将充满 · 请回到车旁'],
+  lowAlert: ['ເງິນໃນກະເປົາໃກ້ໝົດ · ເຕີມເງິນເພື່ອສາກຕໍ່ໂດຍບໍ່ຕ້ອງສະແກນໃໝ່', 'เงินในกระเป๋าใกล้หมด · เติมเงินเพื่อชาร์จต่อโดยไม่ต้องสแกนใหม่', 'Wallet running low · top up to keep charging without rescanning', '余额不足 · 充值即可继续，无需重新扫码'],
+  fullPark: ['ສາກເຕັມແລ້ວ · ກະລຸນາຖອດສາຍ ແລະ ຍ້າຍລົດ · ຄ່າຈອດເລີ່ມນັບຫຼັງ {n} ນາທີ', 'ชาร์จเต็มแล้ว · กรุณาถอดสายและย้ายรถ · ค่าจอดเริ่มนับหลัง {n} นาที', 'Full · please unplug and move the car · parking is charged after {n} min', '已充满 · 请拔枪挪车 · {n} 分钟后开始收停车费'],
+  unplugged: ['ຖອດສາຍແລ້ວ · ຈ່າຍເງິນ', 'ถอดสายแล้ว · จ่ายเงิน', 'Unplugged · pay', '已拔枪 · 付款'],
+  r_admin: ['ແອັດມິນຢຸດການສາກ', 'แอดมินหยุดการชาร์จ', 'Stopped by TREE CHARGE staff', '工作人员已停止充电'],
+  doneTitle: ['ສາກສຳເລັດ', 'ชาร์จเสร็จแล้ว', 'Charging complete', '充电完成'], r_full: ['ສາກເຕັມຕາມທີ່ຕັ້ງ', 'ชาร์จเต็มตามที่ตั้ง', 'Reached full', '已充满'], r_user: ['ທ່ານກົດຢຸດ', 'คุณกดหยุด', 'You stopped it', '您已停止'], r_wallet: ['ເງິນໃນກະເປົາໝົດ · ຕັດໄຟອັດຕະໂນມັດ', 'เงินในกระเป๋าหมด · ตัดไฟอัตโนมัติ', 'Wallet empty · power cut automatically', '余额用完 · 自动断电'], r_meter: ['ຕູ້ສົ່ງສັນຍານສິ້ນສຸດ', 'ตู้ส่งสัญญาณสิ้นสุด', 'Ended by the charger', '充电桩结束'],
+  energy: ['ຄ່າໄຟ', 'ค่าไฟ', 'Energy', '电费'], parking: ['ຄ່າຈອດ', 'ค่าจอด', 'Parking', '停车费'], total: ['ລວມທັງໝົດ', 'รวมทั้งหมด', 'Total', '合计'], deducted: ['ຫັກຈາກກະເປົາແລ້ວ', 'หักจากกระเป๋าแล้ว', 'Taken from your wallet', '已从钱包扣除'],
+  rateQ: ['ໃຫ້ດາວສາຂານີ້', 'ให้ดาวสาขานี้', 'Rate this station', '为本站评分'], rateNote: ['ຄຳຄິດເຫັນ (ບໍ່ບັງຄັບ)', 'ความคิดเห็น (ไม่บังคับ)', 'Comment (optional)', '评论（可选）'], send: ['ສົ່ງ', 'ส่ง', 'Send', '发送'], skip: ['ຂ້າມ', 'ข้าม', 'Skip', '跳过'],
+  thanks: ['ຂອບໃຈທີ່ໃຊ້ບໍລິການ TREE CHARGE', 'ขอบคุณที่ใช้บริการ TREE CHARGE', 'Thank you for charging with TREE CHARGE', '感谢使用 TREE CHARGE'], homeIn: ['ກັບໜ້າຫຼັກໃນ {n} ວິນາທີ', 'กลับหน้าหลักใน {n} วินาที', 'Back home in {n} s', '{n} 秒后返回首页'], home: ['ໜ້າຫຼັກ', 'หน้าหลัก', 'Home', '首页'],
+  chargingNow: ['ກຳລັງສາກ · ແຕະເພື່ອເບິ່ງ', 'กำลังชาร์จ · แตะเพื่อดู', 'Charging · tap to view', '充电中 · 点击查看'],
+  // history
+  hSessions: ['ການສາກ', 'การชาร์จ', 'Charges', '充电'], hWallet: ['ກະເປົາເງິນ', 'กระเป๋าเงิน', 'Wallet', '钱包'], noHistory: ['ຍັງບໍ່ມີປະຫວັດ', 'ยังไม่มีประวัติ', 'Nothing here yet', '暂无记录'],
+  l_topup: ['ເຕີມເງິນ', 'เติมเงิน', 'Top-up', '充值'], l_charge: ['ຄ່າສາກ', 'ค่าชาร์จ', 'Charge', '充电'], l_adjust: ['ປັບໂດຍແອັດມິນ', 'ปรับโดยแอดมิน', 'Adjustment', '调整'], l_points: ['ແລກແຕ້ມ', 'แลกแต้ม', 'Points', '积分兑换'],
+  receipt: ['ໃບບິນ', 'ใบเสร็จ', 'Receipt', '收据'], gun: ['ຕູ້ · ຫົວ', 'ตู้ · หัว', 'Charger · gun', '桩 · 枪'], date: ['ວັນທີ', 'วันที่', 'Date', '日期'], duration: ['ໄລຍະເວລາ', 'ระยะเวลา', 'Duration', '时长'],
+  // me
+  editProfile: ['ແກ້ໄຂຂໍ້ມູນ', 'แก้ไขข้อมูล', 'Edit profile', '编辑资料'], agentT: ['ສະໝັກເປັນຕົວແທນ', 'สมัครเป็นตัวแทน', 'Become a partner', '成为合作伙伴'], agentS: ['ເປີດຕູ້ສາກຢູ່ສະຖານທີ່ຂອງທ່ານ', 'เปิดตู้ชาร์จที่สถานที่ของคุณ', 'Host chargers at your place', '在您的场地开设充电站'],
+  mHistory: ['ປະຫວັດການສາກ', 'ประวัติการชาร์จ', 'Charging history', '充电记录'], mReceipts: ['ໃບບິນ ແລະ ການຊຳລະເງິນ', 'ใบเสร็จและการชำระเงิน', 'Receipts & payments', '收据与付款'], mLang: ['ພາສາ', 'ภาษา', 'Language', '语言'], mTheme: ['ໂໝດໜ້າຈໍ', 'โหมดหน้าจอ', 'Display', '显示模式'],
+  light: ['ແຈ້ງ', 'สว่าง', 'Light', '浅色'], dark: ['ມືດ', 'มืด', 'Dark', '深色'], mInbox: ['ຂ່າວສານ ແລະ ແຈ້ງເຕືອນ', 'ข่าวสารและแจ้งเตือน', 'News & alerts', '消息与通知'], mHelp: ['ຕິດຕໍ່ ແລະ ຊ່ວຍເຫຼືອ', 'ติดต่อและช่วยเหลือ', 'Contact & help', '联系与帮助'],
+  mTerms: ['ຂໍ້ກຳນົດ ແລະ ນະໂຍບາຍ', 'ข้อกำหนดและนโยบาย', 'Terms & privacy', '条款与隐私'], mPass: ['ປ່ຽນລະຫັດຜ່ານ', 'เปลี่ยนรหัสผ่าน', 'Change password', '修改密码'], logout: ['ອອກຈາກລະບົບ', 'ออกจากระบบ', 'Sign out', '退出登录'],
+  save: ['ບັນທຶກ', 'บันทึก', 'Save', '保存'], saved: ['ບັນທຶກແລ້ວ', 'บันทึกแล้ว', 'Saved', '已保存'], curPass: ['ລະຫັດປັດຈຸບັນ', 'รหัสปัจจุบัน', 'Current password', '当前密码'], newPass: ['ລະຫັດໃໝ່', 'รหัสใหม่', 'New password', '新密码'],
+  passChanged: ['ປ່ຽນລະຫັດແລ້ວ · ເຄື່ອງອື່ນຈະຕ້ອງເຂົ້າສູ່ລະບົບໃໝ່', 'เปลี่ยนรหัสแล้ว · เครื่องอื่นต้องเข้าสู่ระบบใหม่', 'Password changed · other phones must sign in again', '密码已修改 · 其他设备需重新登录'],
+  // inbox / help
+  readAll: ['ອ່ານແລ້ວທັງໝົດ', 'อ่านแล้วทั้งหมด', 'Mark all read', '全部已读'], nNew: ['ໃໝ່', 'ใหม่', 'New', '新'], k_new: ['ເປີດສາຂາໃໝ່', 'เปิดสาขาใหม่', 'New station', '新站点'], k_promo: ['ໂປຣໂມຊັ່ນ', 'โปรโมชั่น', 'Promotion', '优惠'], k_maint: ['ປິດປັບປຸງ', 'ปิดปรับปรุง', 'Maintenance', '维护'], k_info: ['ແຈ້ງການ', 'ประกาศ', 'Notice', '公告'],
+  noNews: ['ຂ່າວສານຈາກ TREE CHARGE ຈະສະແດງຢູ່ນີ້', 'ข่าวสารจาก TREE CHARGE จะแสดงที่นี่', 'News from TREE CHARGE shows here', 'TREE CHARGE 的消息会显示在这里'],
+  helpTitle: ['ສູນບໍລິການລູກຄ້າ', 'ศูนย์บริการลูกค้า', 'Customer care', '客户服务'], hFaq: ['ຄຳຖາມທີ່ພົບເລື້ອຍ', 'คำถามที่พบบ่อย', 'Common questions', '常见问题'], hContact: ['ຕິດຕໍ່ພວກເຮົາ', 'ติดต่อเรา', 'Contact us', '联系我们'],
+  hFeedback: ['ຄຳຄິດເຫັນ', 'ความคิดเห็น', 'Feedback', '意见反馈'], hReport: ['ແຈ້ງບັນຫາ', 'แจ้งปัญหา', 'Report a problem', '报告问题'], hotline: ['ສາຍດ່ວນ 24 ຊມ.', 'สายด่วน 24 ชม.', '24 h hotline', '24 小时热线'], email: ['ອີເມວ', 'อีเมล', 'Email', '邮箱'],
+  stars: ['ໃຫ້ຄະແນນ', 'ให้คะแนน', 'Your rating', '评分'], topic: ['ເລື່ອງ', 'เรื่อง', 'About', '主题'], tApp: ['ແອັບ', 'แอป', 'App', '应用'], tStation: ['ສາຂາ', 'สาขา', 'Station', '站点'], tPrice: ['ລາຄາ', 'ราคา', 'Price', '价格'], tService: ['ການບໍລິການ', 'การบริการ', 'Service', '服务'],
+  yourText: ['ຂໍ້ຄວາມ', 'ข้อความ', 'Message', '内容'], sentOk: ['ສົ່ງແລ້ວ · ແອັດມິນຈະກວດ ແລະ ຕອບກັບ', 'ส่งแล้ว · แอดมินจะตรวจและตอบกลับ', 'Sent · our team will reply', '已发送 · 我们会回复'],
+  pType: ['ບັນຫາ', 'ปัญหา', 'Problem', '问题'], p1: ['ຕູ້ບໍ່ເປີດ / ໜ້າຈໍດັບ', 'ตู้ไม่เปิด / จอดับ', 'Charger will not start', '充电桩无法启动'], p2: ['ສາກບໍ່ເຂົ້າ / ຢຸດເອງ', 'ชาร์จไม่เข้า / หยุดเอง', 'Not charging / stops', '无法充电/自动停止'], p3: ['ຫັກເງິນຜິດ', 'หักเงินผิด', 'Wrong charge', '扣费错误'], p4: ['ຫົວສາກເສຍ', 'หัวชาร์จเสีย', 'Damaged gun', '充电枪损坏'], p5: ['ອື່ນໆ', 'อื่นๆ', 'Other', '其他'],
+  where: ['ສາຂາ / ເບີຕູ້', 'สาขา / เบอร์ตู้', 'Station / charger', '站点 / 桩号'], note: ['ໝາຍເຫດ', 'หมายเหตุ', 'Note', '备注'], photos: ['ຮູບ (ສູງສຸດ 6 ຮູບ)', 'รูป (สูงสุด 6 รูป)', 'Photos (up to 6)', '照片（最多 6 张）'], addPhoto: ['ເພີ່ມຮູບ', 'เพิ่มรูป', 'Add photo', '添加照片'],
+  reportOk: ['ສົ່ງແລ້ວ · ເລກອ້າງອີງ ', 'ส่งแล้ว · เลขอ้างอิง ', 'Sent · reference ', '已发送 · 编号 '],
+  agName: ['ຊື່ ແລະ ນາມສະກຸນ', 'ชื่อและนามสกุล', 'Full name', '姓名'], agAddr: ['ທີ່ຢູ່', 'ที่อยู่', 'Address', '地址'], agPlace: ['ສະຖານທີ່ທີ່ຢາກເປີດຕູ້ສາກ', 'สถานที่ที่อยากเปิดตู้ชาร์จ', 'Where you would like chargers', '希望设站的地点'],
+  agPlaceHint: ['ເຊັ່ນ ປ້ຳນ້ຳມັນ, ຮ້ານກາເຟ, ບ່ອນຈອດໄດ້ຈັກຄັນ', 'เช่น ปั๊มน้ำมัน ร้านกาแฟ จอดได้กี่คัน', 'e.g. petrol station, café, how many parking spaces', '如加油站、咖啡店、可停几辆车'], agOk: ['ສົ່ງໃບສະໝັກແລ້ວ · ທີມງານຈະຕິດຕໍ່ກັບ', 'ส่งใบสมัครแล้ว · ทีมงานจะติดต่อกลับ', 'Application sent · we will contact you', '申请已提交 · 我们会联系您'],
+  terms: ['ຂໍ້ກຳນົດການໃຊ້ງານ: ການສາກຈ່າຍຈາກກະເປົາເງິນ TREE ຕາມ kWh ທີ່ສາກໄດ້ແທ້ ບວກຄ່າຈອດ (ຖ້າສາຂາກຳນົດ). ເງິນໃນກະເປົາໃຊ້ໄດ້ທຸກສາຂາ. ຂໍ້ມູນສ່ວນຕົວ (ຊື່, ເບີໂທ) ໃຊ້ສະເພາະການບໍລິການ ແລະ ບໍ່ເປີດເຜີຍໃຫ້ບຸກຄົນອື່ນ. ລະຫັດຜ່ານຖືກເຂົ້າລະຫັດ ບໍ່ມີໃຜເຫັນໄດ້.', 'ข้อกำหนดการใช้งาน: การชาร์จจ่ายจากกระเป๋าเงิน TREE ตาม kWh ที่ชาร์จได้จริง บวกค่าจอด (ถ้าสาขากำหนด) เงินในกระเป๋าใช้ได้ทุกสาขา ข้อมูลส่วนตัว (ชื่อ เบอร์โทร) ใช้เฉพาะการให้บริการ และไม่เปิดเผยแก่บุคคลอื่น รหัสผ่านถูกเข้ารหัส ไม่มีใครเห็นได้', 'Terms: charging is paid from your TREE wallet for the kWh actually delivered, plus parking where a station sets it. The wallet works at every station. Your name and phone are used only to provide the service and are never shared. Passwords are stored encrypted.', '条款：充电按实际电量从 TREE 钱包扣费，部分站点另收停车费。钱包适用于所有站点。您的姓名和电话仅用于提供服务，不会外泄。密码加密保存。'],
+  faq1q: ['ເລີ່ມສາກແນວໃດ?', 'เริ่มชาร์จอย่างไร?', 'How do I start?', '如何开始充电？'], faq1a: ['ເຕີມເງິນເຂົ້າກະເປົາ → ກົດປຸ່ມສະແກນສີຂຽວ → ສ່ອງ QR ທີ່ຫົວສາກ → ສຽບສາຍ → ກົດເລີ່ມສາກ', 'เติมเงินเข้ากระเป๋า → กดปุ่มสแกนสีเขียว → ส่อง QR ที่หัวชาร์จ → เสียบสาย → กดเริ่มชาร์จ', 'Top up → tap the green scan button → scan the QR on the gun → plug in → Start', '充值 → 点绿色扫码按钮 → 扫枪上的二维码 → 插枪 → 开始'],
+  faq2q: ['ເງິນໝົດລະຫວ່າງສາກ?', 'เงินหมดระหว่างชาร์จ?', 'What if my wallet runs out?', '充电中余额用完？'], faq2a: ['ລະບົບເຕືອນເມື່ອເງິນເຫຼືອ ₭10,000 · ເຕີມເງິນລະຫວ່າງສາກໄດ້ເລີຍ ສາກຕໍ່ໂດຍບໍ່ຕ້ອງສະແກນໃໝ່ · ຖ້າເງິນໝົດ ລະບົບຕັດໄຟ ແລະ ຫັກເທົ່າທີ່ສາກໄດ້', 'ระบบเตือนเมื่อเงินเหลือ ₭10,000 · เติมเงินระหว่างชาร์จได้เลย ชาร์จต่อโดยไม่ต้องสแกนใหม่ · ถ้าเงินหมด ระบบตัดไฟและหักเท่าที่ชาร์จได้', 'You get a warning at ₭10,000 · top up during the charge and it continues · if it reaches ₭0 the power is cut and only what you got is charged', '余额 ₭10,000 时提醒 · 充电中可直接充值继续 · 余额为 0 时自动断电，只扣实际电费'],
+  faq3q: ['ເຕີມເງິນແລ້ວເງິນບໍ່ເຂົ້າ?', 'เติมเงินแล้วเงินไม่เข้า?', 'Top-up not showing?', '充值未到账？'], faq3a: ['ກວດວ່າໃສ່ເລກອ້າງອີງ (TC……) ໃນໝາຍເຫດ · ຖ້າເກີນ 15 ນາທີ ໂທສາຍດ່ວນ', 'ตรวจว่าใส่เลขอ้างอิง (TC……) ในหมายเหตุ · ถ้าเกิน 15 นาที โทรสายด่วน', 'Check you wrote the reference (TC……) in the note · after 15 min call the hotline', '请确认备注中填写了参考号 (TC……) · 超过 15 分钟请致电热线'],
+  installTip: ['ເພີ່ມແອັບໄວ້ໜ້າຈໍ: ກົດ ⋮ ຫຼື ⎙ ໃນບຣາວເຊີ → "ເພີ່ມໃສ່ໜ້າຈໍຫຼັກ"', 'เพิ่มแอปไว้หน้าจอ: กด ⋮ หรือ ⎙ ในเบราว์เซอร์ → "เพิ่มไปยังหน้าจอหลัก"', 'Add to home screen: browser menu ⋮ or ⎙ → "Add to Home screen"', '添加到主屏幕：浏览器菜单 ⋮ 或 ⎙ → “添加到主屏幕”']
+};
+
+var LOGO = 'data:image/webp;base64,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';
+var FLAGS = {lo: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2030%2020%22%3E%3Crect%20width%3D%2230%22%20height%3D%2220%22%20fill%3D%22%23CE1126%22%2F%3E%3Crect%20y%3D%225%22%20width%3D%2230%22%20height%3D%2210%22%20fill%3D%22%23002868%22%2F%3E%3Ccircle%20cx%3D%2215%22%20cy%3D%2210%22%20r%3D%224%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E',th: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2030%2020%22%3E%3Crect%20width%3D%2230%22%20height%3D%2220%22%20fill%3D%22%23A51931%22%2F%3E%3Crect%20y%3D%223.33%22%20width%3D%2230%22%20height%3D%2213.34%22%20fill%3D%22%23F4F5F8%22%2F%3E%3Crect%20y%3D%226.67%22%20width%3D%2230%22%20height%3D%226.66%22%20fill%3D%22%232D2A4A%22%2F%3E%3C%2Fsvg%3E',en: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2060%2030%22%3E%3CclipPath%20id%3D%22s%22%3E%3Cpath%20d%3D%22M0%2C0v30h60V0z%22%2F%3E%3C%2FclipPath%3E%3CclipPath%20id%3D%22t%22%3E%3Cpath%20d%3D%22M30%2C15h30v15zv15H0zH0V0zV0h30z%22%2F%3E%3C%2FclipPath%3E%3Cg%20clip-path%3D%22url%28%23s%29%22%3E%3Cpath%20d%3D%22M0%2C0v30h60V0z%22%20fill%3D%22%23012169%22%2F%3E%3Cpath%20d%3D%22M0%2C0L60%2C30M60%2C0L0%2C30%22%20stroke%3D%22%23fff%22%20stroke-width%3D%226%22%2F%3E%3Cpath%20d%3D%22M0%2C0L60%2C30M60%2C0L0%2C30%22%20clip-path%3D%22url%28%23t%29%22%20stroke%3D%22%23C8102E%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M30%2C0v30M0%2C15h60%22%20stroke%3D%22%23fff%22%20stroke-width%3D%2210%22%2F%3E%3Cpath%20d%3D%22M30%2C0v30M0%2C15h60%22%20stroke%3D%22%23C8102E%22%20stroke-width%3D%226%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E',zh: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2030%2020%22%3E%3Crect%20width%3D%2230%22%20height%3D%2220%22%20fill%3D%22%23DE2910%22%2F%3E%3Cpolygon%20points%3D%225.00%2C2.00%205.67%2C4.07%207.85%2C4.07%206.09%2C5.35%206.76%2C7.43%205.00%2C6.15%203.24%2C7.43%203.91%2C5.35%202.15%2C4.07%204.33%2C4.07%22%20fill%3D%22%23FFDE00%22%2F%3E%3Cpolygon%20points%3D%229.14%2C2.51%209.62%2C1.97%209.25%2C1.34%209.91%2C1.63%2010.39%2C1.08%2010.33%2C1.80%2011.00%2C2.09%2010.29%2C2.25%2010.22%2C2.97%209.85%2C2.35%22%20fill%3D%22%23FFDE00%22%2F%3E%3Cpolygon%20points%3D%2211.01%2C4.14%2011.66%2C3.82%2011.56%2C3.10%2012.07%2C3.62%2012.72%2C3.30%2012.38%2C3.95%2012.88%2C4.47%2012.17%2C4.34%2011.83%2C4.99%2011.73%2C4.27%22%20fill%3D%22%23FFDE00%22%2F%3E%3Cpolygon%20points%3D%2211.04%2C6.73%2011.76%2C6.70%2011.96%2C6.00%2012.21%2C6.68%2012.94%2C6.66%2012.37%2C7.10%2012.62%2C7.79%2012.01%2C7.38%2011.44%2C7.83%2011.64%2C7.13%22%20fill%3D%22%23FFDE00%22%2F%3E%3Cpolygon%20points%3D%229.22%2C8.38%209.90%2C8.63%2010.35%2C8.06%2010.32%2C8.79%2011.00%2C9.05%2010.30%2C9.24%2010.26%2C9.96%209.87%2C9.36%209.16%2C9.55%209.62%2C8.98%22%20fill%3D%22%23FFDE00%22%2F%3E%3C%2Fsvg%3E'};
+/* ================= TREE CHARGE — customer app ================= */
+'use strict';
+var LI = { lo: 0, th: 1, en: 2, zh: 3 }, LN = { lo: 'ລາວ', th: 'ไทย', en: 'English', zh: '中文' };
+var store = {
+  get: function (k, d) { try { var v = localStorage.getItem('tc_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set: function (k, v) { try { localStorage.setItem('tc_' + k, JSON.stringify(v)); } catch (e) {} },
+  del: function (k) { try { localStorage.removeItem('tc_' + k); } catch (e) {} }
+};
+var S = {
+  lang: store.get('lang', 'lo'), theme: store.get('theme', 'light'), token: store.get('token', ''), me: null, boot: null,
+  view: 'loading', tab: 'branches', sel: null, q: '', f: {}, ad: 0, pos: null, gps: false, read: store.get('read', {}),
+  authMode: 'login', form: {}, err: '', busy: '', splash: false, qr: (BOOT && BOOT.q) || '', topAmt: 100000, topup: null, charge: null, scan: null, done: null,
+  hist: null, histTab: 's', receipt: null, help: 'menu', fb: { stars: 0 }, rp: { photos: [] }, ag: {}, prevNear: ''
+};
+function T(k) { var r = W[k]; return r ? (r[LI[S.lang]] || r[0]) : k; }
+function TF(k, o) { return T(k).replace(/\{(\w+)\}/g, function (m, x) { return o[x]; }); }
+function loc(o) { return o ? (o[S.lang] || o.lo || o.en || '') : ''; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function kip(n) { return '₭' + Math.round(n || 0).toLocaleString('en-US'); }
+function $(s) { return document.querySelector(s); }
+
+/* ---------- server ---------- */
+function call(action, payload) {
+  payload = payload || {};
+  if (S.token && !payload.token) payload.token = S.token;
+  return new Promise(function (res, rej) {
+    google.script.run.withSuccessHandler(function (r) {
+      if (r && r.ok) res(r.data);
+      else { var e = r || { error: 'server' }; if (e.error === 'auth' && S.token) signedOut(); rej(e); }
+    }).withFailureHandler(function (e) { rej({ error: 'network', msg: String(e) }); }).appApi(action, payload);
+  });
+}
+function errText(e) { var k = 'e_' + ((e && e.error) || 'server'); return W[k] ? T(k) : T('e_server'); }
+function signedOut() { S.token = ''; S.me = null; store.del('token'); S.view = 'auth'; S.authMode = 'login'; render(); }
+
+/* ---------- icons ---------- */
+var IC = {
+  plug: '<path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5"/>', pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.6"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M13 7l-3 5h4l-3 5"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', head: '<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  back: '<path d="M15 18l-6-6 6-6"/>', chev: '<path d="M9 6l6 6-6 6"/>', nav: '<path d="M3 11l18-8-8 18-2-8z"/>', refresh: '<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', hist: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>', rcpt: '<path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/>', doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>', out: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>', star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+  agent: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/>', phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>', chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', warn: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>', bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>'
+};
+function ico(k, s) { s = s || 20; return '<svg aria-hidden="true" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (IC[k] || '') + '</svg>'; }
+/** small animated charger (glow = state colour) */
+function kiosk(glow, w) {
+  w = w || 56; var h = Math.round(w * 1.5);
+  return '<svg aria-hidden="true" width="' + w + '" height="' + h + '" viewBox="0 0 64 96" fill="none"><ellipse cx="28" cy="91" rx="22" ry="3.5" fill="#000" opacity=".12"/>' +
+    '<path d="M44 40 C60 42 60 64 54 74" stroke="#2a3238" stroke-width="3.2" stroke-linecap="round"/><path d="M44 40 C60 42 60 64 54 74" stroke="' + glow + '" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 7" style="animation:run .9s linear infinite"/>' +
+    '<rect x="50" y="72" width="9" height="13" rx="2.5" fill="#2a3238"/><rect x="8" y="6" width="38" height="82" rx="8" fill="#1f272c"/><rect x="12" y="12" width="30" height="24" rx="4" fill="#0d1418"/>' +
+    '<path d="M29 15 L21 26 H27 L24 33 L33 21 H27 Z" fill="' + glow + '" style="animation:blink 1.6s ease-in-out infinite"/>' +
+    '<path d="M11 42 V82" stroke="' + glow + '" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="4 8" style="animation:run 1.1s linear infinite"/><path d="M43 42 V82" stroke="' + glow + '" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="4 8" style="animation:run 1.1s linear infinite reverse"/>' +
+    '<circle cx="27" cy="50" r="4" fill="#0d1418" stroke="#3a454c" stroke-width="1.5"/><rect x="18" y="62" width="18" height="3" rx="1.5" fill="#3a454c"/><rect x="18" y="69" width="12" height="3" rx="1.5" fill="#3a454c"/></svg>';
+}
+var GLOW = { free: '#3ddc5c', full: '#ff5a3c', down: '#9aa3ad' };
+
+/* ---------- branches: state, distance ---------- */
+function bstate(b) {
+  var free = b.conns.filter(function (c) { return c.status === 'available'; });
+  var busy = b.conns.filter(function (c) { return c.status === 'charging'; });
+  return { free: free, busy: busy, state: free.length ? 'free' : busy.length ? 'full' : 'down' };
+}
+function kmTo(b) {
+  if (!S.pos) return null;
+  var R = 6371, dLat = (b.lat - S.pos.lat) * Math.PI / 180, dLng = (b.lng - S.pos.lng) * Math.PI / 180;
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(S.pos.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function navUrl(b) { return 'https://www.google.com/maps/dir/?api=1&destination=' + b.lat + ',' + b.lng + '&travelmode=driving'; }
+function starsOf(r) { var n = Math.round(r); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
+var watchId = null;
+function locate() {
+  try {
+    if (!navigator.geolocation) return;
+    if (watchId != null) navigator.geolocation.clearWatch(watchId);
+    watchId = navigator.geolocation.watchPosition(function (p) {
+      var np = { lat: p.coords.latitude, lng: p.coords.longitude }, moved = !S.pos ? 99 : Math.hypot((np.lat - S.pos.lat) * 111, (np.lng - S.pos.lng) * 111 * Math.cos(np.lat * Math.PI / 180));
+      if (moved > 0.15) {
+        S.pos = np; S.gps = true;
+        var n = nearestB();
+        if (n && S.prevNear && n.id !== S.prevNear) toast(T('nearMoved') + loc(n.name));
+        S.prevNear = n ? n.id : '';
+        if (S.view === 'main' && (S.tab === 'branches' || S.tab === 'map')) render(true);
+      }
+    }, function () { S.gps = false; }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 15000 });
+  } catch (e) {}
+}
+function nearestB() {
+  if (!S.boot || !S.pos) return null;
+  return S.boot.branches.slice().sort(function (a, b) { return kmTo(a) - kmTo(b); })[0] || null;
+}
+
+/* ---------- toast + helpers ---------- */
+var toastT;
+function toast(m) { var el = $('#toast'); if (!el) { el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); } el.textContent = m; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { el.hidden = true; }, 3200); }
+function copyText(t) {
+  var done = function () { toast(T('copied')); };
+  try { navigator.clipboard.writeText(t).then(done, fb); } catch (e) { fb(); }
+  function fb() { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} ta.remove(); }
+}
+function unread() { if (!S.boot) return 0; return S.boot.notices.filter(function (n) { return !S.read[n.id]; }).length; }
+
+/* ================= RENDER ================= */
+function render(keepScroll) {
+  document.documentElement.dataset.theme = S.theme;
+  document.documentElement.lang = S.lang;
+  var y = window.scrollY, h = '';
+  if (S.view === 'loading') h = '<div class="loader"><i></i></div>';
+  else if (S.view === 'auth') h = vAuth();
+  else h = header() + '<main>' + body() + '</main>' + (S.view === 'main' ? navbar() : '');
+  h += overlays();
+  $('#app').innerHTML = h;
+  if (S.view === 'main' && S.tab === 'map') drawMap();
+  if (S.view === 'scan') startCam();
+  window.scrollTo(0, keepScroll ? y : 0);
+}
+function header() {
+  var n = unread();
+  return '<header class="hdr"><img src="' + LOGO + '" alt=""><div class="brand"><b>TREE CHARGE</b><small>STATION</small></div><span class="sp"></span>' +
+    '<button class="ib" data-a="theme" aria-label="' + T('mTheme') + '">' + ico(S.theme === 'dark' ? 'sun' : 'moon', 18) + '</button>' +
+    '<button class="lb" data-a="langSheet"><img src="' + FLAGS[S.lang] + '" alt="">' + LN[S.lang].slice(0, 3) + '</button>' +
+    '<button class="ib" data-a="inbox" aria-label="' + T('mInbox') + '"><span style="display:grid;' + (n ? 'animation:bell 2.4s ease-in-out infinite;transform-origin:50% 10%' : '') + '">' + ico('bell', 18) + '</span>' + (n ? '<span class="dot">' + n + '</span>' : '') + '</button>' +
+    '<button class="ib" data-a="help" aria-label="' + T('mHelp') + '">' + ico('head', 18) + '</button></header>';
+}
+function navbar() {
+  var it = function (t, i, l) { return '<button data-a="tab" data-v="' + t + '" ' + (S.tab === t ? 'aria-current="page"' : '') + '>' + ico(i, 22) + '<span>' + T(l) + '</span></button>'; };
+  return '<nav class="nav">' + it('branches', 'plug', 'tBranches') + it('map', 'pin', 'tMap') +
+    '<button class="scan" data-a="scan"><span class="o">' + ico('scan', 28) + '</span><span style="font-weight:700;color:var(--ink)">' + T('tScan') + '</span></button>' +
+    it('history', 'clock', 'tHistory') + it('me', 'user', 'tMe') + '</nav>';
+}
+function backBar(act) { return '<button class="btn ghost sm" style="align-self:flex-start;background:var(--card);border-radius:20px" data-a="' + (act || 'home') + '">' + ico('back', 18) + T('back') + '</button>'; }
+function body() {
+  switch (S.view) {
+    case 'main': return S.tab === 'branches' ? vBranches() : S.tab === 'map' ? vMap() : S.tab === 'history' ? vHistory() : vMe();
+    case 'branch': return vBranch();
+    case 'topup': return vTopup();
+    case 'scan': return vScan();
+    case 'charge': return vCharge();
+    case 'inbox': return vInbox();
+    case 'help': return vHelp();
+    case 'agent': return vAgent();
+    case 'profile': return vProfile();
+    case 'password': return vPassword();
+    case 'terms': return backBar() + '<div class="card pad"><h2>' + T('mTerms') + '</h2><p class="small">' + esc(T('terms')) + '</p></div>';
+    case 'receipt': return vReceipt();
+  }
+  return '';
+}
+function overlays() {
+  var h = '';
+  if (S.splash) h += '<div class="overlay splash" role="status"><div class="ring"><svg width="168" height="168" viewBox="0 0 140 140" style="transform:rotate(-90deg)"><circle cx="70" cy="70" r="62" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="6"/><circle cx="70" cy="70" r="62" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-dasharray="390" style="animation:fill 2.1s cubic-bezier(.4,0,.2,1) forwards"/></svg><svg width="168" height="168" viewBox="0 0 140 140" style="animation:spin 1.4s linear infinite"><circle cx="70" cy="8" r="4" fill="#fff"/></svg><span class="logo"><img src="' + LOGO + '" alt="TREE CHARGE"></span></div>' +
+    '<div style="animation:up .6s ease .35s both"><div style="font-size:17px;font-weight:600;opacity:.92">' + T('welcome') + '</div><div style="font-family:var(--fd);font-size:28px;font-weight:700;line-height:1.2">TREE CHARGE STATION</div></div>' +
+    (S.me ? '<div style="font-weight:600;animation:up .6s ease .7s both">' + esc(T('hello') + S.me.name) + ' 👋</div>' : '') + '<div class="small" style="position:absolute;bottom:40px;opacity:.8">' + T('opening') + '</div></div>';
+  if (S.busy) h += '<div class="overlay busy" role="status"><div class="ring" style="width:140px;height:140px"><svg width="140" height="140" viewBox="0 0 140 140" style="animation:spin 1.1s linear infinite"><circle cx="70" cy="70" r="62" fill="none" stroke="var(--sunk)" stroke-width="8"/><circle cx="70" cy="70" r="62" fill="none" stroke="var(--volt-ink)" stroke-width="8" stroke-linecap="round" stroke-dasharray="110 280"/></svg><img src="' + LOGO + '" alt="" width="86" height="86" style="object-fit:contain"></div><b>' + esc(S.busy) + '</b></div>';
+  if (S.sheet === 'lang') h += '<div class="sheet" data-a="closeSheet"><div data-stop="1"><h2>' + T('lang') + '</h2>' + ['lo', 'th', 'en', 'zh'].map(function (l) { return '<button class="mi" data-a="setLang" data-v="' + l + '" style="border:1.5px solid ' + (S.lang === l ? 'var(--volt)' : 'var(--line)') + ';border-radius:14px;margin-bottom:6px"><span class="ic"><img src="' + FLAGS[l] + '" alt=""></span>' + LN[l] + (S.lang === l ? '<span class="v" style="color:var(--volt-ink)">✓</span>' : '') + '</button>'; }).join('') + '</div></div>';
+  if (S.sheet === 'stop') h += '<div class="sheet" data-a="closeSheet"><div data-stop="1"><h2>' + T('stopAsk') + '</h2><p class="small muted">' + T('stopNote') + '</p><button class="btn red" data-a="stopYes">' + T('stopYes') + '</button><button class="btn ghost" data-a="closeSheet">' + T('keep') + '</button></div></div>';
+  return h;
+}
+
+/* ---------- auth ---------- */
+function vAuth() {
+  var reg = S.authMode === 'register', fm = S.form;
+  var qrb = S.qr ? '<div class="okbox">' + ico('scan', 16) + ' ' + esc(T('qrBanner') + S.qr + T('qrBanner2')) + '</div>' : '';
+  var pwf = function (id, k, lbl) { return '<div class="f"><label for="' + id + '">' + T(lbl) + '</label><div class="pw"><input class="inp" id="' + id + '" data-f="' + k + '" type="' + (S.showPw ? 'text' : 'password') + '" value="' + esc(fm[k] || '') + '" autocomplete="' + (reg ? 'new-password' : 'current-password') + '"><button type="button" data-a="togglePw">' + (S.showPw ? T('hide') : T('show')) + '</button></div></div>'; };
+  return '<div style="max-width:440px;margin:0 auto;padding:28px 18px calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px">' +
+    '<div class="row" style="justify-content:space-between"><button class="lb" data-a="langSheet"><img src="' + FLAGS[S.lang] + '" alt="">' + LN[S.lang] + '</button><button class="ib" data-a="theme">' + ico(S.theme === 'dark' ? 'sun' : 'moon', 18) + '</button></div>' +
+    '<img src="' + LOGO + '" alt="TREE CHARGE" style="width:96px;height:96px;object-fit:contain;align-self:center">' +
+    '<div style="text-align:center"><h1>' + T(reg ? 'register' : 'login') + '</h1><div class="muted small">' + T(reg ? 'regSub' : 'loginSub') + '</div></div>' + qrb +
+    '<form id="authForm" class="col" style="gap:14px" novalidate>' +
+    (reg ? '<div class="f"><label for="rn">' + T('name') + '</label><input class="inp" id="rn" data-f="name" autocomplete="username" value="' + esc(fm.name || '') + '"></div>' +
+      '<div class="f"><label for="rp">' + T('phone') + '</label><input class="inp mono" id="rp" data-f="phone" type="tel" inputmode="tel" placeholder="020 XXXX XXXX" value="' + esc(fm.phone || '') + '"></div>' + pwf('rpw', 'pass', 'pass') + pwf('rpw2', 'pass2', 'pass2')
+      : '<div class="f"><label for="li">' + T('idLabel') + '</label><input class="inp" id="li" data-f="id" autocomplete="username" value="' + esc(fm.id || '') + '"></div>' + pwf('lp', 'pass', 'pass')) +
+    (S.err ? '<div class="err" role="alert">' + esc(S.err) + '</div>' : '') +
+    '<button class="btn grad" type="submit">' + T(reg ? 'register' : 'login') + '</button></form>' +
+    (reg ? '' : '<button class="link" style="align-self:center" data-a="forgot">' + T('forgot') + '</button>') +
+    '<div style="text-align:center" class="small">' + T(reg ? 'haveAcc' : 'noAcc') + ' <button class="link" data-a="authMode" data-v="' + (reg ? 'login' : 'register') + '">' + T(reg ? 'login' : 'register') + '</button></div></div>';
+}
+
+/* ---------- branches tab ---------- */
+function vBranches() {
+  var B = S.boot.branches.slice(), q = S.q.trim().toLowerCase();
+  B.forEach(function (b) { b._km = kmTo(b); b._st = bstate(b); });
+  if (S.pos) B.sort(function (a, b) { return a._km - b._km; });
+  if (S.f.top) B.sort(function (a, b) { return b.rating - a.rating; });
+  if (S.f.free) B.sort(function (a, b) { return b._st.free.length - a._st.free.length; });
+  var list = B.filter(function (b) { return (!S.f.h24 || b.h24) && (!S.f.ccs || b.conns.some(function (c) { return c.type === 'CCS2'; })) && (!S.f.gbt || b.conns.some(function (c) { return c.type === 'GB/T'; })); });
+  var hit = function (b) { if (!q) return false; var hay = [loc(b.name), loc(b.area), loc(b.addr), b.name.lo, b.name.th, b.name.en, b.name.zh].concat(b.conns.map(function (c) { return c.no; })).join(' ').toLowerCase(); return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; }); };
+  var matches = list.filter(hit);
+  if (q) list = matches.concat(list.filter(function (b) { return !hit(b); }));
+  var near = S.pos ? B[0] && B.slice().sort(function (a, b) { return a._km - b._km; })[0] : null;
+  var h = '';
+  if (S.me && S.me.charging) h += '<button class="alert ok" data-a="openCharge" style="border:0;width:100%;cursor:pointer">' + ico('bolt', 18) + T('chargingNow') + '</button>';
+  var ads = S.boot.ads;
+  if (ads.length) { var a = ads[S.ad % ads.length]; h += '<div class="ads"><img src="' + esc(a.img) + '" alt="' + esc(a.title) + '"' + (a.link ? ' data-a="openLink" data-v="' + esc(a.link) + '" style="cursor:pointer"' : '') + '></div><div class="dots">' + ads.map(function (x, i) { return '<i class="' + (i === S.ad % ads.length ? 'on' : '') + '"></i>'; }).join('') + '</div>'; }
+  // nearest
+  if (near) {
+    var nf = near._st.state === 'free' ? null : B.slice().sort(function (a, b) { return a._km - b._km; }).filter(function (b) { return b._st.state === 'free'; })[0];
+    h += '<section class="card pad col" style="gap:12px;border:1.5px solid var(--volt)"><div class="row"><span style="position:relative;width:40px;height:40px;display:grid;place-items:center;flex:none"><span style="position:absolute;inset:0;border-radius:50%;background:var(--volt);animation:ping 1.8s ease-out infinite"></span><span style="position:relative;width:34px;height:34px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center">' + ico('pin', 18) + '</span></span><div style="flex:1;min-width:0"><b style="color:var(--volt-ink)">' + T('nearest') + '</b><div class="xs muted">' + T('gps') + '</div></div><button class="ib" data-a="locate" aria-label="GPS">' + ico('refresh', 17) + '</button></div>' +
+      '<button class="row" data-a="openB" data-v="' + near.id + '" style="border:0;background:var(--soft);border-radius:12px;padding:12px;text-align:left;cursor:pointer;color:var(--ink)"><div style="flex:1;min-width:0" class="col"><b style="font-family:var(--fd);font-size:18px">' + esc(loc(near.name)) + '</b><span class="small muted">' + esc(loc(near.area)) + '</span><span><b class="mono" style="font-size:24px;color:var(--volt-ink)">' + near._km.toFixed(1) + '</b> <b style="color:var(--volt-ink)">' + T('km') + '</b> <span class="small muted">· ' + T('drive') + Math.max(2, Math.round(near._km / 28 * 60)) + T('min') + '</span></span>' + statePill(near) + '</div>' + kiosk(GLOW[near._st.state], 52) + '</button>' +
+      (nf ? '<button class="link" style="text-align:left;color:var(--volt-ink)" data-a="openB" data-v="' + nf.id + '">' + T('nearFree') + esc(loc(nf.name)) + ' · ' + nf._km.toFixed(1) + ' ' + T('km') + '</button>' : '') +
+      '<div class="row"><a class="btn grad sm" style="flex:1;text-decoration:none" href="' + navUrl(near) + '" target="_blank" rel="noopener">' + ico('nav', 17) + T('directions') + '</a><button class="btn out sm" style="flex:1" data-a="openB" data-v="' + near.id + '">' + T('viewBranch') + '</button></div></section>';
+  } else h += '<button class="alert ok" data-a="locate" style="border:0;width:100%;cursor:pointer">' + ico('pin', 18) + T('noGps') + '</button>';
+  h += '<label class="search">' + ico('search', 18) + '<input id="q" type="search" placeholder="' + T('search') + '" value="' + esc(S.q) + '" aria-label="' + T('search') + '">' + (q ? '<button class="x" data-a="clearQ" aria-label="×">×</button>' : '') + '</label>';
+  if (q) h += '<section class="card pad col" style="gap:8px;border:1.5px solid var(--volt)"><b class="small" style="color:var(--volt-ink)">' + T('results') + matches.length + '</b>' + (matches.length ? matches.slice(0, 5).map(function (b) { return '<button class="row" data-a="openB" data-v="' + b.id + '" style="border:0;background:var(--soft);border-radius:12px;padding:10px;text-align:left;cursor:pointer;color:var(--ink)"><span style="width:36px;height:36px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;flex:none">' + ico('bolt', 18) + '</span><span style="flex:1;min-width:0"><b>' + esc(loc(b.name)) + '</b><div class="xs muted">' + esc(loc(b.area)) + (b._km != null ? ' · ' + b._km.toFixed(1) + ' ' + T('km') : '') + '</div></span>' + statePill(b) + '</button>'; }).join('') : '<div class="small muted">' + T('noResult') + ' “' + esc(S.q) + '”</div>') + '</section>';
+  var chip = function (k, l) { return '<button class="chip" data-a="filter" data-v="' + k + '" aria-pressed="' + !!S.f[k] + '">' + l + '</button>'; };
+  h += '<div class="chips">' + chip('free', '✓ ' + T('fFree')) + chip('top', '★ ' + T('fTop')) + chip('ccs', 'CCS2') + chip('gbt', 'GB/T') + chip('h24', T('f24')) + '</div>';
+  h += '<div class="row" style="justify-content:space-between"><h1 style="font-size:20px">' + T('allBranches') + ' <span class="mono muted" style="font-size:15px">' + list.length + '</span></h1><button class="link" data-a="tab" data-v="map">' + T('tMap') + '</button></div>';
+  h += list.map(function (b) { return bCard(b, q && hit(b), near && near.id === b.id); }).join('');
+  return h;
+}
+function statePill(b) {
+  var s = b._st || bstate(b);
+  return s.state === 'free' ? '<span class="pill p-free" style="align-self:flex-start">' + T('available') + ' ' + s.free.length + '</span>' : s.state === 'full' ? '<span class="pill p-busy" style="align-self:flex-start">' + T('full') + '</span>' : '<span class="pill p-off" style="align-self:flex-start">' + T('offline') + '</span>';
+}
+function stateBox(b) {
+  var s = b._st || bstate(b);
+  if (s.state === 'free') return '<div class="stat free"><div style="flex:1;min-width:0" class="col"><b>● ' + TF('freeOf', { a: s.free.length, b: b.conns.length }) + '</b><span class="xs muted">' + T('freeGuns') + '</span><div class="row" style="flex-wrap:wrap;gap:6px">' + s.free.map(function (c) { return '<span class="gun">' + esc(c.no) + ' · ' + esc(c.type) + ' · ' + c.kw + ' kW</span>'; }).join('') + '</div></div>' + kiosk(GLOW.free, 56) + '</div>';
+  if (s.state === 'full') { var soon = s.busy.slice().sort(function (a, b) { return (a.minsLeft || 99) - (b.minsLeft || 99); })[0]; return '<div class="stat full"><div style="flex:1" class="col"><b>● ' + T('full') + '</b>' + (soon ? '<span class="small" style="color:var(--ink)">' + T('soon') + esc(soon.no) + ' · ' + esc(soon.type) + ' · ' + T('inAbout') + (soon.minsLeft || 1) + T('min') + '</span>' : '') + '</div>' + kiosk(GLOW.full, 56) + '</div>'; }
+  return '<div class="stat down"><b style="flex:1">● ' + T('down') + '</b></div>';
+}
+function bCard(b, isHit, isNear) {
+  var types = {};
+  b.conns.forEach(function (c) { var t = types[c.type] = types[c.type] || { n: 0, f: 0 }; t.n++; if (c.status === 'available') t.f++; });
+  return '<button class="card bcard" data-a="openB" data-v="' + b.id + '"><div class="row" style="align-items:flex-start"><div style="flex:1;min-width:0"><b style="font-size:17px">' + esc(loc(b.name)) + '</b>' + (isHit ? '<span class="tag" style="background:var(--blue)">🔍</span>' : '') + (isNear ? '<span class="tag">📍 ' + T('nearestTag') + '</span>' : '') +
+    '<div class="small muted">' + esc(loc(b.area)) + ' · ' + (b.h24 ? T('open24') : esc(b.hours)) + '</div><div class="small"><span class="stars">' + starsOf(b.rating) + '</span> ' + (b.ratingN ? '<b class="mono">' + b.rating.toFixed(1) + '</b> <span class="muted">· ' + b.ratingN + T('reviews') + '</span>' : '<span class="muted">' + T('noReviews') + '</span>') + '</div></div>' +
+    (b._km != null ? '<span class="pill p-off mono">' + b._km.toFixed(1) + ' ' + T('km') + '</span>' : '') + '</div>' + stateBox(b) +
+    '<div class="row" style="flex-wrap:wrap;gap:6px">' + Object.keys(types).map(function (t) { return '<span class="pill p-blue">' + t + ' ' + T('available') + ' <span class="mono">' + types[t].f + '/' + types[t].n + '</span></span>'; }).join('') + (b.parkFree ? '<span class="pill p-off">' + T('parkFree') + '</span>' : '<span class="pill p-busy" style="background:var(--warn-soft);color:var(--warn)">' + T('parking') + ' ' + kip(b.parkFee) + T('perMin') + '</span>') + '</div>' +
+    '<div class="row" style="border-top:1px solid var(--line);padding-top:10px"><b class="mono" style="font-size:22px">' + kip(b.price) + '</b><span class="muted small">' + T('perKwh') + '</span><span class="sp"></span>' + statePill(b) + '</div></button>';
+}
+
+/* ---------- map ---------- */
+function vMap() { return '<div id="map" role="application" aria-label="' + T('tMap') + '"></div><div class="xs muted">© OpenStreetMap</div>'; }
+var MAP = null;
+function drawMap() {
+  if (typeof L === 'undefined') { $('#map').innerHTML = '<div class="pad muted">' + T('e_network') + '</div>'; return; }
+  var el = $('#map'); MAP = L.map(el, { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(MAP);
+  var pts = [];
+  S.boot.branches.forEach(function (b) {
+    var st = bstate(b).state, lbl = esc(loc(b.name)) + ' · ' + (st === 'free' ? T('available') + ' ' + bstate(b).free.length : st === 'full' ? T('full') : T('offline'));
+    var icon = L.divIcon({ className: '', iconSize: [40, 60], iconAnchor: [20, 58], html: '<div style="position:relative;width:40px;height:60px"><div class="pinl" style="color:' + (st === 'free' ? 'var(--volt-ink)' : st === 'full' ? 'var(--bad)' : 'var(--muted)') + '">' + lbl + '</div>' + kiosk(GLOW[st], 40) + '</div>' });
+    L.marker([b.lat, b.lng], { icon: icon }).addTo(MAP).on('click', function () { openBranch(b.id); });
+    pts.push([b.lat, b.lng]);
+  });
+  if (S.pos) { L.circleMarker([S.pos.lat, S.pos.lng], { radius: 8, color: '#fff', weight: 3, fillColor: '#1d5bd0', fillOpacity: 1 }).addTo(MAP); pts.push([S.pos.lat, S.pos.lng]); }
+  if (pts.length) MAP.fitBounds(pts, { padding: [50, 50], maxZoom: 14 }); else MAP.setView([17.97, 102.62], 12);
+}
+
+/* ---------- branch detail ---------- */
+function openBranch(id) { S.sel = id; S.view = 'branch'; render(); }
+function vBranch() {
+  var b = S.boot.branches.filter(function (x) { return x.id === S.sel; })[0];
+  if (!b) return backBar();
+  b._st = bstate(b); var km = kmTo(b);
+  return backBar() + '<h1>' + esc(loc(b.name)) + '</h1><div class="muted small">' + esc(loc(b.addr)) + '</div>' +
+    '<div class="card pad row"><b class="mono" style="font-size:34px;color:var(--volt-ink)">' + (b.ratingN ? b.rating.toFixed(1) : '–') + '</b><div><div class="stars" style="font-size:20px">' + starsOf(b.rating) + '</div><div class="small muted">' + (b.ratingN ? b.ratingN + T('reviews') : T('noReviews')) + '</div></div></div>' +
+    stateBox(b) +
+    '<div class="card pad"><dl class="dl">' + (km != null ? '<div><dt>' + T('distance') + '</dt><dd class="mono">' + km.toFixed(1) + ' ' + T('km') + ' · ' + T('drive') + Math.max(2, Math.round(km / 28 * 60)) + T('min') + '</dd></div>' : '') +
+    '<div><dt>' + T('hours') + '</dt><dd>' + (b.h24 ? T('open24') : esc(b.hours)) + '</dd></div><div><dt>' + T('price') + '</dt><dd class="mono">' + kip(b.price) + ' / kWh</dd></div>' +
+    '<div><dt>' + T('parking') + '</dt><dd>' + (b.parkFree ? '<span class="pill p-free">' + T('parkFree') + '</span>' : kip(b.parkFee) + T('perMin') + TF('freeMins', { n: b.parkMins })) + '</dd></div><div><dt>' + T('call') + '</dt><dd class="mono">' + esc(b.phone) + '</dd></div></dl></div>' +
+    '<div class="card pad col"><b>' + T('guns') + '</b>' + b.conns.map(function (c) { return '<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0"><span class="mono"><b>' + esc(c.no) + '</b>-' + c.n + ' · ' + esc(c.type) + ' · ' + c.kw + ' kW</span><span class="pill ' + (c.status === 'available' ? 'p-free' : c.status === 'charging' ? 'p-busy' : 'p-off') + '">' + T(c.status) + (c.status === 'charging' && c.minsLeft ? ' · ' + TF('minsLeft', { n: c.minsLeft }) : '') + '</span></div>'; }).join('') + '<div class="xs muted">' + T('scanHere') + '</div></div>' +
+    '<a class="btn grad" style="text-decoration:none" href="' + navUrl(b) + '" target="_blank" rel="noopener">' + ico('nav', 18) + T('directions') + '</a>';
+}
+
+/* ---------- history ---------- */
+function loadHist() { call('me.history').then(function (d) { S.hist = d; if (S.me) { S.me.balance = d.balance; S.me.points = d.points; } render(true); }).catch(function (e) { toast(errText(e)); }); }
+function vHistory() {
+  if (!S.hist) { loadHist(); return '<div class="loader"><i></i></div>'; }
+  var h = '<div class="seg"><button data-a="histTab" data-v="s" aria-pressed="' + (S.histTab === 's') + '">' + T('hSessions') + '</button><button data-a="histTab" data-v="w" aria-pressed="' + (S.histTab === 'w') + '">' + T('hWallet') + '</button></div>';
+  if (S.histTab === 's') {
+    h += S.hist.sessions.length ? S.hist.sessions.map(function (s, i) { return '<button class="card pad row" data-a="receipt" data-v="' + i + '" style="text-align:left;cursor:pointer;width:100%;color:var(--ink)"><span class="ic" style="width:40px;height:40px;border-radius:12px;background:var(--soft);color:var(--volt-ink);display:grid;place-items:center;flex:none">' + ico('bolt', 20) + '</span><div style="flex:1;min-width:0"><b>' + esc(loc(s.branchName)) + '</b><div class="xs muted mono">' + esc(s.end.slice(0, 16)) + ' · ' + esc(s.charger) + '-' + s.conn + '</div></div><div style="text-align:right"><b class="mono">' + kip(s.total) + '</b><div class="xs muted mono">' + s.kwh.toFixed(2) + ' kWh</div></div></button>'; }).join('') : '<div class="card pad muted" style="text-align:center">' + T('noHistory') + '</div>';
+  } else {
+    h += (S.hist.pending || []).map(function (t) { return '<div class="card pad row"><span class="pill" style="background:var(--warn-soft);color:var(--warn)">' + T('pendingN') + '</span><div style="flex:1" class="mono small">' + esc(t.ref) + '</div><b class="mono">+' + kip(t.amt) + '</b></div>'; }).join('');
+    h += S.hist.ledger.length ? '<div class="card">' + S.hist.ledger.map(function (l) { return '<div class="row" style="padding:12px 16px;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0"><b class="small">' + T('l_' + l.type) + '</b><div class="xs muted mono">' + esc(l.time.slice(0, 16)) + ' · ' + esc(l.ref) + '</div></div><b class="mono" style="color:' + (l.amt > 0 ? 'var(--volt-ink)' : 'var(--ink)') + '">' + (l.amt > 0 ? '+' : '−') + kip(Math.abs(l.amt)) + '</b></div>'; }).join('') + '</div>' : '<div class="card pad muted" style="text-align:center">' + T('noHistory') + '</div>';
+  }
+  return h;
+}
+function vReceipt() {
+  var s = S.receipt; if (!s) return backBar();
+  return backBar('backHist') + '<div class="card pad col" style="gap:4px"><h1>' + T('receipt') + '</h1><div class="muted small mono">' + esc(s.id) + '</div><dl class="dl" style="margin-top:8px">' +
+    '<div><dt>' + T('tBranches') + '</dt><dd>' + esc(loc(s.branchName || s.branch)) + '</dd></div><div><dt>' + T('gun') + '</dt><dd class="mono">' + esc(s.charger) + '-' + s.conn + ' · ' + esc(s.type) + '</dd></div>' +
+    '<div><dt>' + T('date') + '</dt><dd class="mono">' + esc(String(s.start).slice(0, 16)) + ' → ' + esc(String(s.end).slice(11, 16)) + '</dd></div><div><dt>' + T('duration') + '</dt><dd class="mono">' + s.mins + T('min') + '</dd></div>' +
+    '<div><dt>' + T('kwhNow') + '</dt><dd class="mono">' + Number(s.kwh).toFixed(2) + ' kWh × ' + kip(s.price) + '</dd></div><div><dt>' + T('energy') + '</dt><dd class="mono">' + kip(s.energy) + '</dd></div>' + (s.park ? '<div><dt>' + T('parking') + '</dt><dd class="mono">' + kip(s.park) + '</dd></div>' : '') +
+    '<div><dt><b style="color:var(--ink)">' + T('total') + '</b></dt><dd class="mono" style="font-size:22px">' + kip(s.total) + '</dd></div><div><dt>' + T('stop') + '</dt><dd>' + T('r_' + s.endReason) + '</dd></div></dl></div>';
+}
+
+/* ---------- me ---------- */
+function vMe() {
+  var me = S.me, r = S.boot.rules;
+  var amts = [50000, 100000, 200000];
+  var mi = function (a, i, l, v) { return '<button class="mi" data-a="' + a + '"><span class="ic">' + i + '</span>' + l + '<span class="v">' + (v || '') + ico('chev', 18) + '</span></button>'; };
+  return '<div class="card pad row"><span style="width:64px;height:64px;border-radius:50%;background:var(--soft);color:var(--volt-ink);display:grid;place-items:center;flex:none">' + ico('user', 30) + '</span><div style="flex:1;min-width:0"><b style="font-size:19px">' + esc(me.name) + '</b><div class="muted mono">' + esc(me.phone) + '</div></div><button class="link" data-a="go" data-v="profile">' + T('editProfile') + '</button></div>' +
+    '<section class="wallet"><div class="row" style="justify-content:space-between"><span class="small">' + T('wallet') + '</span><span class="xs" style="opacity:.9">' + T('walletSub') + '</span></div><div class="amt">' + kip(me.balance) + '</div>' +
+    '<div class="row" style="flex-wrap:wrap;gap:8px">' + amts.map(function (a) { return '<button class="wchip" data-a="topAmt" data-v="' + a + '" aria-pressed="' + (S.topAmt === a) + '">' + kip(a) + '</button>'; }).join('') + '</div>' +
+    '<button class="wbtn" data-a="topupGo">' + TF('topupBy', { a: kip(S.topAmt) }) + '</button></section>' +
+    '<section class="card pad row" style="background:var(--soft);border-color:var(--volt-ink)"><span style="width:44px;height:44px;border-radius:50%;background:var(--volt);color:#fff;display:grid;place-items:center;flex:none">★</span><div style="flex:1"><b class="mono" style="color:var(--volt-ink);font-size:18px">' + (me.points || 0).toLocaleString('en-US') + T('points') + '</b><div class="xs muted">' + TF('pointsRule', { a: r.ptsKwh, b: r.ptsRedeem.toLocaleString('en-US'), c: kip(r.ptsKip) }) + '</div></div><button class="btn sm" data-a="redeem" ' + ((me.points || 0) < r.ptsRedeem ? 'disabled' : '') + '>' + T('redeem') + '</button></section>' +
+    '<button class="row" data-a="go" data-v="agent" style="border:0;border-radius:var(--r);background:var(--grad);color:#fff;padding:16px;text-align:left;cursor:pointer"><span style="width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none">' + ico('agent', 24) + '</span><span style="flex:1"><b style="font-size:17px">' + T('agentT') + '</b><div class="small" style="opacity:.9">' + T('agentS') + '</div></span>' + ico('chev', 20) + '</button>' +
+    '<div class="card menu">' + mi('histS', ico('hist'), T('mHistory')) + mi('histW', ico('rcpt'), T('mReceipts')) + mi('langSheet', '<img src="' + FLAGS[S.lang] + '" alt="">', T('mLang'), LN[S.lang]) +
+    mi('theme', ico(S.theme === 'dark' ? 'moon' : 'sun'), T('mTheme'), T(S.theme === 'dark' ? 'dark' : 'light')) + mi('inbox', ico('bell'), T('mInbox'), unread() ? '<span class="pill p-busy">' + unread() + '</span>' : '') +
+    mi('help', ico('help'), T('mHelp')) + mi('go" data-v="password', ico('key'), T('mPass')) + mi('go" data-v="terms', ico('doc'), T('mTerms')) + '</div>' +
+    '<button class="btn ghost" data-a="logout">' + ico('out', 18) + T('logout') + '</button><div class="xs muted" style="text-align:center">' + T('installTip') + '</div>';
+}
+function vProfile() {
+  var f = S.form;
+  return backBar('backMe') + '<h1>' + T('editProfile') + '</h1><form id="profForm" class="card pad col" style="gap:14px" novalidate><div class="f"><label for="pn">' + T('name') + '</label><input class="inp" id="pn" data-f="name" value="' + esc(f.name) + '"></div><div class="f"><label for="pp">' + T('phone') + '</label><input class="inp mono" id="pp" data-f="phone" type="tel" value="' + esc(f.phone) + '"></div>' + (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + '<button class="btn" type="submit">' + T('save') + '</button></form>';
+}
+function vPassword() {
+  return backBar('backMe') + '<h1>' + T('mPass') + '</h1><form id="pwForm" class="card pad col" style="gap:14px" novalidate><div class="f"><label for="pc">' + T('curPass') + '</label><input class="inp" id="pc" data-f="cur" type="password" autocomplete="current-password"></div><div class="f"><label for="pn1">' + T('newPass') + '</label><input class="inp" id="pn1" data-f="pass" type="password" autocomplete="new-password"></div><div class="f"><label for="pn2">' + T('pass2') + '</label><input class="inp" id="pn2" data-f="pass2" type="password" autocomplete="new-password"></div>' + (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + '<button class="btn" type="submit">' + T('save') + '</button></form>';
+}
+
+/* ---------- top-up ---------- */
+function vTopup() {
+  var r = S.boot.rules, t = S.topup;
+  if (!t) {
+    var amts = [20000, 50000, 100000, 200000, 500000, 1000000];
+    return backBar('backMe') + '<h1>' + T('topup') + '</h1><div class="card pad col" style="gap:12px"><div class="row" style="flex-wrap:wrap;gap:8px">' + amts.map(function (a) { return '<button class="chip mono" data-a="topAmt" data-v="' + a + '" aria-pressed="' + (S.topAmt === a) + '">' + kip(a) + '</button>'; }).join('') + '</div>' +
+      '<div class="f"><label for="ta">' + T('other') + '</label><input class="inp mono" id="ta" type="number" inputmode="numeric" value="' + S.topAmt + '"><span class="xs muted">' + TF('minMax', { a: kip(r.topMin), b: kip(r.topMax) }) + '</span></div>' + (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') +
+      '<button class="btn grad" data-a="topupCreate">' + TF('topupBy', { a: kip(S.topAmt) }) + '</button></div>';
+  }
+  if (t.status === 'paid') return '<div class="card pad col" style="align-items:center;text-align:center;gap:10px;padding:28px 16px"><span style="width:72px;height:72px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-size:34px">✓</span><h1>' + T('paid') + '</h1><b class="mono" style="font-size:28px;color:var(--volt-ink)">+' + kip(t.amt) + '</b><div class="muted">' + T('balanceNow') + '<b class="mono">' + kip(t.balance) + '</b></div><button class="btn" data-a="' + (S.charge && S.charge.active ? 'openCharge' : 'backMe') + '">' + T(S.charge && S.charge.active ? 'keep' : 'done') + '</button></div>';
+  var cp = function (v) { return '<button class="ib" style="width:32px;height:32px" data-a="copy" data-v="' + esc(v) + '" aria-label="' + T('copy') + '">' + ico('copy', 15) + '</button>'; };
+  return backBar('backMe') + '<h1>' + T('payTitle') + '</h1><div class="card pad col" style="gap:12px">' +
+    '<div class="row" style="justify-content:space-between"><span class="muted">' + T('amount') + '</span><b class="mono" style="font-size:26px">' + kip(t.amt) + '</b></div>' +
+    '<div class="alert ok">1</div>'.replace('>1<', '>1. ' + T('payStep1') + '<') +
+    '<dl class="dl"><div><dt>' + T('bank') + '</dt><dd>' + esc(t.bank.name) + '</dd></div><div><dt>' + T('account') + '</dt><dd class="row mono">' + esc(t.bank.acc) + cp(t.bank.acc) + '</dd></div><div><dt>' + T('holder') + '</dt><dd>' + esc(t.bank.holder) + '</dd></div></dl>' +
+    '<div class="alert ok">2. ' + T('payStep2') + '</div><div class="row" style="justify-content:center;gap:12px"><b class="mono" style="font-size:30px;letter-spacing:2px">' + esc(t.ref) + '</b>' + cp(t.ref) + '</div>' +
+    '<div class="alert warn">3. ' + T('payStep3') + '</div><div class="row" style="justify-content:center;gap:10px" role="status"><span style="width:18px;height:18px;border-radius:50%;border:3px solid var(--sunk);border-top-color:var(--volt);animation:spin 1s linear infinite"></span><b>' + T('waiting') + '</b></div>' +
+    (t.demo ? '<button class="btn out" data-a="demoPay">' + T('demoPay') + '</button>' : '') + '<button class="link" style="color:var(--bad);align-self:center" data-a="topupCancel">' + T('cancelTopup') + '</button></div>';
+}
+var topupPoll = null;
+function pollTopup() {
+  clearInterval(topupPoll);
+  topupPoll = setInterval(function () {
+    if (S.view !== 'topup' || !S.topup || S.topup.status === 'paid') { clearInterval(topupPoll); return; }
+    call('topup.status', { id: S.topup.id }).then(function (d) { if (d.status === 'paid') { S.topup.status = 'paid'; S.topup.balance = d.balance; S.me.balance = d.balance; S.hist = null; render(); } else if (d.status === 'cancel') { S.topup = null; render(); } }).catch(function () {});
+  }, 5000);
+}
+
+/* ---------- scan + charge ---------- */
+var camStream = null, camTimer = null;
+function vScan() {
+  return backBar('stopScan') + '<h1>' + T('scanTitle') + '</h1><div class="small muted">' + T('scanHint') + '</div><video id="cam" playsinline muted hidden></video><div id="camMsg"></div>' +
+    '<form id="codeForm" class="row" novalidate><input class="inp mono" id="code" placeholder="' + T('codePh') + '" autocapitalize="characters" style="flex:1"><button class="btn sm" type="submit" style="height:52px">' + T('go') + '</button></form>' + (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '');
+}
+// QR text may be the full link (…/exec?c=TCA01-1 or …github.io/treecharge/?c=TCA01-1) or just the code
+function qrCode(v) { var m = String(v || '').match(/[?&]c=([^&#]+)/); return m ? decodeURIComponent(m[1]) : String(v || '').trim(); }
+// Inside the TREE CHARGE phone app (GitHub page) the camera is opened by that outer page,
+// because Google's frame around this page is not allowed to use the camera.
+var WRAP = false;
+try { if (window.top !== window) window.top.postMessage({ tc: 'hello' }, '*'); } catch (e) {}
+window.addEventListener('message', function (e) {
+  var d = e.data || {};
+  if (d.tc === 'wrapper') WRAP = true;
+  if (d.tc === 'code' && d.code) { stopCam(); lookup(qrCode(d.code)); }
+  if (d.tc === 'scanFail' && S.view === 'scan') { var m = $('#camMsg'); if (m) m.innerHTML = '<div class="alert warn">' + T('noCam') + '</div>'; }
+});
+function startCam() {
+  stopCam();
+  var v = $('#cam'), msg = $('#camMsg');
+  if (WRAP) { if (S.camAsked || S.busy) return; S.camAsked = true; try { window.top.postMessage({ tc: 'scan', lang: S.lang }, '*'); return; } catch (e) {} }
+  if (!('BarcodeDetector' in window) || !navigator.mediaDevices) { msg.innerHTML = '<div class="alert warn">' + T('noCam') + '</div>'; return; }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (st) {
+    camStream = st; v.srcObject = st; v.hidden = false; v.play();
+    var det = new BarcodeDetector({ formats: ['qr_code'] });
+    camTimer = setInterval(function () { det.detect(v).then(function (r) { if (r && r[0]) { stopCam(); lookup(qrCode(r[0].rawValue)); } }).catch(function () {}); }, 400);
+  }).catch(function () { msg.innerHTML = '<div class="alert warn">' + T('noCam') + '</div>'; });
+}
+function stopCam() { clearInterval(camTimer); if (camStream) { camStream.getTracks().forEach(function (t) { t.stop(); }); camStream = null; } }
+function lookup(code) {
+  S.err = ''; S.busy = T('starting'); render();
+  call('charge.lookup', { code: code }).then(function (d) {
+    S.busy = '';
+    if (d.active) { openCharge(); return; }
+    S.scan = d; S.view = 'charge'; S.charge = null; S.done = null; render();
+  }).catch(function (e) { S.busy = ''; S.err = errText(e); S.view = 'scan'; render(); });
+}
+function vCharge() {
+  if (S.done) return vDone();
+  var c = S.charge;
+  if (c && c.active) return vCharging(c);
+  var d = S.scan; if (!d) return backBar();
+  if (d.choose) return backBar() + '<h1>' + T('pickGun') + '</h1>' + d.choose.map(function (x) { return '<button class="card pad row" data-a="pickGun" data-v="' + x.conn.id + '" style="width:100%;text-align:left;cursor:pointer;color:var(--ink)"><b class="mono" style="font-size:18px">' + esc(x.conn.no) + '-' + x.conn.n + '</b><span class="muted">' + esc(x.conn.type) + ' · ' + x.conn.kw + ' kW</span><span class="sp"></span><span class="pill ' + (x.conn.status === 'available' ? 'p-free' : 'p-busy') + '">' + T(x.conn.status) + '</span></button>'; }).join('');
+  var k = d.conn, b = d.branch, ok = k.status === 'available' && d.balance > 0;
+  return backBar() + '<h1>' + T('ready') + '</h1><div class="card pad col" style="align-items:center;text-align:center;gap:8px">' + kiosk(k.status === 'available' ? GLOW.free : GLOW.full, 70) + '<b class="mono" style="font-size:26px">' + esc(k.no) + ' · ' + T('guns') + ' ' + k.n + '</b><div class="muted">' + esc(k.type) + ' · ' + k.kw + ' kW · ' + esc(loc(b.name)) + '</div><span class="pill ' + (k.status === 'available' ? 'p-free' : k.status === 'charging' ? 'p-busy' : 'p-off') + '">' + T(k.status) + '</span></div>' +
+    '<div class="kv"><div><span class="xs muted">' + T('price') + '</span><b>' + kip(b.price) + '/kWh</b></div><div><span class="xs muted">' + T('wallet') + '</span><b style="color:' + (d.balance > 0 ? 'var(--volt-ink)' : 'var(--bad)') + '">' + kip(d.balance) + '</b></div></div>' +
+    '<div class="small muted">' + (b.parkFree ? T('parkFree') : T('parkFee') + kip(b.parkFee) + T('perMin') + TF('freeMins', { n: b.parkMins })) + ' · ' + T('payFrom') + '</div>' +
+    (d.balance <= 0 ? '<div class="err">' + T('e_noMoney') + '</div><button class="btn grad" data-a="topupFromCharge">' + T('topup') + '</button>' : k.status !== 'available' ? '<div class="err">' + T(k.status === 'offline' ? 'e_offline' : 'e_busy') + '</div>' : '<div class="alert ok">' + ico('plug', 18) + T('plugIn') + '</div>') +
+    (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + '<button class="btn grad" data-a="startCharge" ' + (ok ? '' : 'disabled') + '>' + ico('bolt', 20) + T('start') + '</button>';
+}
+function vCharging(c) {
+  var R = 92, C = 2 * Math.PI * R, pct = c.pct || 0;
+  var h = '<div class="card pad col" style="gap:14px"><div class="row" style="justify-content:space-between"><b>' + esc(loc(c.branch)) + '</b><span class="pill p-free mono">' + esc(c.charger) + '-' + c.conn + ' · ' + esc(c.type) + '</span></div>' +
+    '<div class="prog"><svg viewBox="0 0 220 220"><circle cx="110" cy="110" r="' + R + '" fill="none" stroke="var(--sunk)" stroke-width="16"/><circle cx="110" cy="110" r="' + R + '" fill="none" stroke="url(#g)" stroke-width="16" stroke-linecap="round" stroke-dasharray="' + C + '" stroke-dashoffset="' + (C * (1 - pct / 100)) + '" style="transition:stroke-dashoffset 1s"/><defs><linearGradient id="g"><stop offset="0" stop-color="#178a30"/><stop offset="1" stop-color="#5cbf2e"/></linearGradient></defs></svg>' +
+    '<div class="c"><span style="color:var(--volt-ink);animation:blink 1.4s infinite">' + ico('bolt', 26) + '</span><b class="mono" style="font-size:40px">' + c.kwh.toFixed(2) + '</b><span class="muted">kWh</span><span class="xs muted">' + (c.full ? T('r_full') : T('timeLeft') + ' ' + c.minsLeft + T('min')) + '</span></div></div>' +
+    '<div class="kv"><div><span class="xs muted">' + T('costNow') + '</span><b>' + kip(c.cost) + '</b></div><div><span class="xs muted">' + T('leftWallet') + '</span><b style="color:' + (c.low ? 'var(--bad)' : 'var(--volt-ink)') + '">' + kip(c.left) + '</b></div><div><span class="xs muted">' + T('elapsed') + '</span><b>' + c.mins + T('min') + '</b></div><div><span class="xs muted">' + T('price') + '</span><b>' + kip(c.price) + '</b></div></div>';
+  if (c.park) h += '<div class="alert warn">' + T('parking') + ' ' + kip(c.park) + '</div>';
+  h += '</div>';
+  if (c.full) h += '<div class="alert warn">' + ico('warn', 18) + TF('fullPark', { n: c.parkMins }) + '</div>';
+  else if (c.near) h += '<div class="alert ok">' + ico('bell', 18) + T('nearAlert') + '</div>';
+  if (c.low) h += '<div class="alert bad" style="flex-direction:column">' + '<span>' + ico('warn', 18) + ' ' + T('lowAlert') + '</span><button class="btn sm grad" data-a="topupFromCharge" style="width:100%">' + T('topup') + '</button></div>';
+  h += '<button class="btn red" data-a="askStop">' + (c.full ? T('unplugged') : T('stop')) + '</button>';
+  return h;
+}
+function vDone() {
+  var d = S.done;
+  var h = '<div class="card pad col" style="align-items:center;text-align:center;gap:8px;padding-top:22px"><span style="width:68px;height:68px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-size:32px">✓</span><h1>' + T('doneTitle') + '</h1><div class="muted small">' + T('r_' + d.endReason) + '</div></div>';
+  if (d.endReason === 'wallet') h += '<div class="alert bad" style="flex-direction:column"><span>' + T('r_wallet') + '</span><button class="btn sm grad" style="width:100%" data-a="topupGo">' + T('topup') + '</button></div>';
+  h += '<div class="card pad"><dl class="dl"><div><dt>' + T('kwhNow') + '</dt><dd class="mono">' + Number(d.kwh).toFixed(2) + ' kWh × ' + kip(d.price) + '</dd></div><div><dt>' + T('energy') + '</dt><dd class="mono">' + kip(d.energy) + '</dd></div>' + (d.park ? '<div><dt>' + T('parking') + '</dt><dd class="mono">' + kip(d.park) + '</dd></div>' : '') + '<div><dt><b style="color:var(--ink)">' + T('total') + '</b></dt><dd class="mono" style="font-size:24px">' + kip(d.total) + '</dd></div><div><dt>' + T('deducted') + '</dt><dd class="mono">' + T('balanceNow') + kip(S.me.balance) + '</dd></div></dl></div>';
+  if (S.thanks != null) h += '<div class="card pad col" style="align-items:center;text-align:center;gap:6px"><b style="font-size:18px">' + T('thanks') + '</b><div class="muted small">' + TF('homeIn', { n: S.thanks }) + '</div><button class="btn sm" data-a="home">' + T('home') + '</button></div>';
+  else if (!d.rated) h += '<div class="card pad col" style="gap:10px;align-items:center"><b>' + T('rateQ') + '</b><div class="starpick">' + [1, 2, 3, 4, 5].map(function (n) { return '<button data-a="rate" data-v="' + n + '" class="' + (n <= (S.rate || 0) ? 'on' : '') + '" aria-label="' + n + '">★</button>'; }).join('') + '</div><textarea class="inp" id="rateText" placeholder="' + T('rateNote') + '"></textarea><div class="row" style="width:100%"><button class="btn ghost sm" style="flex:1" data-a="rateSkip">' + T('skip') + '</button><button class="btn sm" style="flex:2" data-a="rateSend" ' + (S.rate ? '' : 'disabled') + '>' + T('send') + '</button></div></div>';
+  else h += '<button class="btn" data-a="home">' + T('home') + '</button>';
+  return h;
+}
+var chargePoll = null;
+function openCharge() { S.view = 'charge'; S.done = null; S.scan = null; render(); pollCharge(true); }
+function pollCharge(now) {
+  clearInterval(chargePoll);
+  var tick = function () {
+    if (S.view !== 'charge' && S.view !== 'topup') { clearInterval(chargePoll); return; }
+    call('charge.status').then(function (d) {
+      var was = S.charge || {};
+      if (d.active) {
+        if (d.near && !was.near) { toast(T('nearAlert')); buzz(); }
+        if (d.low && !was.low) { toast(T('lowAlert')); buzz(); }
+        S.charge = d; S.me.balance = d.balance; S.me.charging = d.id;
+      } else {
+        clearInterval(chargePoll); S.charge = null; S.me.charging = ''; S.me.balance = d.balance; S.hist = null;
+        if (d.last && was.active) { S.done = d.last; S.rate = 0; S.thanks = null; buzz(); }
+      }
+      if (S.view === 'charge') render(true);
+    }).catch(function () {});
+  };
+  if (now) tick();
+  chargePoll = setInterval(tick, 5000);
+}
+function buzz() { try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} }
+var thanksT = null;
+function thanks() {
+  S.thanks = 5; render(true); clearInterval(thanksT);
+  thanksT = setInterval(function () { S.thanks--; if (S.thanks <= 0 || S.view !== 'charge') { clearInterval(thanksT); if (S.view === 'charge') goHome(); } else render(true); }, 1000);
+}
+function goHome() { S.view = 'main'; S.tab = 'branches'; S.done = null; S.thanks = null; S.err = ''; refreshBoot(); render(); }
+
+/* ---------- inbox, help, agent ---------- */
+var NT = { new: ['k_new', '#1b8f32', '⚡'], promo: ['k_promo', '#e07a12', '%'], maint: ['k_maint', '#1d5bd0', '🔧'], info: ['k_info', '#5d6b62', 'i'] };
+function vInbox() {
+  var N = S.boot.notices;
+  return backBar() + '<div class="row" style="justify-content:space-between"><h1>' + T('mInbox') + '</h1>' + (unread() ? '<button class="link" data-a="readAll">' + T('readAll') + '</button>' : '') + '</div>' +
+    (N.length ? N.map(function (n) { var t = NT[n.type] || NT.info, b = n.link && S.boot.branches.filter(function (x) { return x.id === n.link; })[0]; return '<div class="card ncard" style="' + (!S.read[n.id] ? 'border-color:var(--volt)' : '') + '"><span class="nic" style="background:' + t[1] + '">' + t[2] + '</span><div style="flex:1;min-width:0" class="col" style="gap:2px"><div class="row xs" style="gap:6px"><b style="color:' + t[1] + '">' + T(t[0]) + '</b><span class="muted mono">' + esc(n.date) + '</span>' + (!S.read[n.id] ? '<span class="pill p-busy" style="height:18px">' + T('nNew') + '</span>' : '') + '</div><b>' + esc(loc(n.title)) + '</b><div class="small muted">' + esc(loc(n.body)) + '</div>' + (b ? '<button class="link" style="align-self:flex-start;color:var(--volt-ink)" data-a="openB" data-v="' + b.id + '">' + T('viewBranch') + ' →</button>' : '') + '</div></div>'; }).join('') : '<div class="card pad muted" style="text-align:center">' + T('noNews') + '</div>');
+}
+function vHelp() {
+  var c = S.boot.contact, h = backBar(S.help === 'menu' ? 'home' : 'helpMenu');
+  if (S.help === 'menu') return h + '<h1>' + T('helpTitle') + '</h1><div class="card menu">' + [['faq', 'help', 'hFaq'], ['contact', 'phone', 'hContact'], ['feedback', 'chat', 'hFeedback'], ['report', 'warn', 'hReport']].map(function (x) { return '<button class="mi" data-a="helpGo" data-v="' + x[0] + '"><span class="ic">' + ico(x[1]) + '</span>' + T(x[2]) + '<span class="v">' + ico('chev', 18) + '</span></button>'; }).join('') + '</div>';
+  if (S.help === 'faq') return h + '<h1>' + T('hFaq') + '</h1>' + [1, 2, 3].map(function (i) { return '<details class="card pad"><summary style="font-weight:700;cursor:pointer">' + T('faq' + i + 'q') + '</summary><p class="small">' + T('faq' + i + 'a') + '</p></details>'; }).join('');
+  if (S.help === 'contact') return h + '<h1>' + T('hContact') + '</h1><div class="card menu">' + [['phone', T('hotline'), c.hotline], ['phone', T('call'), c.tel], ['chat', 'WhatsApp / LINE', c.line], ['mail', T('email'), c.mail], ['chat', 'Facebook', c.fb]].filter(function (x) { return x[2]; }).map(function (x) { return '<div class="mi"><span class="ic">' + ico(x[0]) + '</span><div style="flex:1;min-width:0"><div class="xs muted">' + x[1] + '</div><b class="mono" style="word-break:break-all">' + esc(x[2]) + '</b></div><button class="ib" data-a="copy" data-v="' + esc(x[2]) + '">' + ico('copy', 15) + '</button></div>'; }).join('') + '</div>' + (c.hotline ? '<a class="btn grad" style="text-decoration:none" href="tel:' + esc(c.hotline.replace(/\s/g, '')) + '">' + ico('phone', 18) + T('call') + ' ' + esc(c.hotline) + '</a>' : '');
+  if (S.help === 'feedback') { var f = S.fb; return h + '<h1>' + T('hFeedback') + '</h1>' + (f.sent ? '<div class="okbox">' + T('sentOk') + '</div>' : '<div class="card pad col" style="gap:12px"><b>' + T('stars') + '</b><div class="starpick">' + [1, 2, 3, 4, 5].map(function (n) { return '<button data-a="fbStar" data-v="' + n + '" class="' + (n <= f.stars ? 'on' : '') + '">★</button>'; }).join('') + '</div><b>' + T('topic') + '</b><div class="row" style="flex-wrap:wrap;gap:6px">' + ['tApp', 'tStation', 'tPrice', 'tService'].map(function (k) { return '<button class="chip" data-a="fbTopic" data-v="' + k + '" aria-pressed="' + (f.topic === k) + '">' + T(k) + '</button>'; }).join('') + '</div><textarea class="inp" id="fbText" placeholder="' + T('yourText') + '">' + esc(f.text || '') + '</textarea>' + (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + '<button class="btn" data-a="fbSend">' + T('send') + '</button></div>'); }
+  var r = S.rp;
+  return h + '<h1>' + T('hReport') + '</h1>' + (r.ref ? '<div class="okbox">' + T('reportOk') + esc(r.ref) + '</div>' : '<div class="card pad col" style="gap:12px"><b>' + T('pType') + '</b><div class="row" style="flex-wrap:wrap;gap:6px">' + ['p1', 'p2', 'p3', 'p4', 'p5'].map(function (k) { return '<button class="chip" data-a="rpType" data-v="' + k + '" aria-pressed="' + (r.type === k) + '">' + T(k) + '</button>'; }).join('') + '</div>' +
+    '<div class="f"><label for="rpW">' + T('where') + '</label><select class="inp" id="rpW"><option value="">—</option>' + S.boot.branches.map(function (b) { return '<option value="' + b.id + '" ' + (r.branch === b.id ? 'selected' : '') + '>' + esc(loc(b.name)) + '</option>'; }).join('') + '</select><input class="inp mono" id="rpC" placeholder="A-01" value="' + esc(r.charger || '') + '"></div>' +
+    '<textarea class="inp" id="rpText" placeholder="' + T('yourText') + '">' + esc(r.text || '') + '</textarea><input class="inp" id="rpNote" placeholder="' + T('note') + '" value="' + esc(r.note || '') + '"><b class="small">' + T('photos') + '</b><div class="ph">' + r.photos.map(function (p) { return '<img src="' + p + '" alt="">'; }).join('') + (r.photos.length < 6 ? '<label>＋<br>' + T('addPhoto') + '<input type="file" accept="image/*" id="rpPhoto" hidden multiple></label>' : '') + '</div>' + (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + '<button class="btn" data-a="rpSend">' + T('send') + '</button></div>');
+}
+function vAgent() {
+  var a = S.ag;
+  return backBar('backMe') + '<div style="background:var(--grad);color:#fff;border-radius:var(--r);padding:18px"><h1>' + T('agentT') + '</h1><div class="small">' + T('agentS') + '</div></div>' + (a.sent ? '<div class="okbox">' + T('agOk') + '</div>' :
+    '<form id="agForm" class="card pad col" style="gap:12px" novalidate><div class="f"><label for="an">' + T('agName') + '</label><input class="inp" id="an" data-g="name" value="' + esc(a.name || S.me.name) + '"></div><div class="f"><label for="aa">' + T('agAddr') + '</label><input class="inp" id="aa" data-g="addr" value="' + esc(a.addr || '') + '"></div><div class="f"><label for="ap">' + T('phone') + '</label><input class="inp mono" id="ap" data-g="phone" type="tel" value="' + esc(a.phone || S.me.phone) + '"></div><div class="f"><label for="apl">' + T('agPlace') + '</label><textarea class="inp" id="apl" data-g="place" placeholder="' + T('agPlaceHint') + '">' + esc(a.place || '') + '</textarea></div>' + (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + '<button class="btn grad" type="submit">' + T('send') + '</button></form>');
+}
+
+/* ================= EVENTS ================= */
+var ACT = {
+  tab: function (v) { S.tab = v; S.view = 'main'; if (v === 'history') S.hist = null; if (v === 'me') refreshMe(); render(); },
+  home: function () { goHome(); }, go: function (v) { S.err = ''; if (v === 'profile') S.form = { name: S.me.name, phone: S.me.phone }; S.view = v; render(); },
+  backMe: function () { S.view = 'main'; S.tab = 'me'; S.topup = null; S.err = ''; render(); }, backHist: function () { S.view = 'main'; S.tab = 'history'; render(); },
+  theme: function () { S.theme = S.theme === 'dark' ? 'light' : 'dark'; store.set('theme', S.theme); render(true); },
+  langSheet: function () { S.sheet = 'lang'; render(true); }, closeSheet: function () { S.sheet = ''; render(true); },
+  setLang: function (v) { S.lang = v; S.sheet = ''; store.set('lang', v); render(true); if (S.token) call('me.update', { name: S.me.name, phone: S.me.phone, lang: v }).catch(function () {}); },
+  inbox: function () { S.view = 'inbox'; render(); setTimeout(function () { S.boot.notices.forEach(function (n) { S.read[n.id] = 1; }); store.set('read', S.read); }, 2500); },
+  readAll: function () { S.boot.notices.forEach(function (n) { S.read[n.id] = 1; }); store.set('read', S.read); render(true); },
+  help: function () { S.help = 'menu'; S.view = 'help'; S.err = ''; render(); }, helpMenu: function () { S.help = 'menu'; S.err = ''; render(); }, helpGo: function (v) { S.help = v; S.err = ''; if (v === 'feedback') S.fb = { stars: 0 }; if (v === 'report') S.rp = { photos: [] }; render(); },
+  authMode: function (v) { S.authMode = v; S.err = ''; render(); }, togglePw: function () { S.showPw = !S.showPw; render(true); },
+  forgot: function () { S.err = T('forgotTxt') + ((S.boot && S.boot.contact.hotline) || ''); render(true); },
+  logout: function () { call('auth.logout').catch(function () {}); signedOut(); },
+  openB: function (v) { openBranch(v); }, locate: function () { S.pos = null; locate(); toast(T('gps')); },
+  filter: function (v) { S.f[v] = !S.f[v]; render(true); }, clearQ: function () { S.q = ''; render(true); },
+  openLink: function (v) { window.open(v, '_blank'); },
+  histTab: function (v) { S.histTab = v; render(true); }, histS: function () { S.tab = 'history'; S.histTab = 's'; S.view = 'main'; S.hist = null; render(); }, histW: function () { S.tab = 'history'; S.histTab = 'w'; S.view = 'main'; S.hist = null; render(); },
+  receipt: function (v) { S.receipt = S.hist.sessions[Number(v)]; S.view = 'receipt'; render(); },
+  topAmt: function (v) { S.topAmt = Number(v); render(true); }, topupGo: function () { S.topup = null; S.err = ''; S.view = 'topup'; render(); },
+  topupFromCharge: function () { S.topup = null; S.err = ''; S.view = 'topup'; render(); },
+  topupCreate: function () {
+    var amt = Number(($('#ta') || {}).value || S.topAmt), r = S.boot.rules;
+    if (!(amt >= r.topMin && amt <= r.topMax)) { S.err = T('e_amount') + ' · ' + TF('minMax', { a: kip(r.topMin), b: kip(r.topMax) }); render(true); return; }
+    S.busy = T('waiting'); render(true);
+    call('topup.create', { amt: amt }).then(function (d) { S.busy = ''; d.status = 'pending'; S.topup = d; render(); pollTopup(); }).catch(function (e) { S.busy = ''; S.err = errText(e); render(true); });
+  },
+  demoPay: function () { call('topup.demoPay', { id: S.topup.id }).then(function (d) { S.topup.status = 'paid'; S.topup.balance = d.balance; S.me.balance = d.balance; S.hist = null; render(); }).catch(function (e) { toast(errText(e)); }); },
+  topupCancel: function () { call('topup.cancel', { id: S.topup.id }).catch(function () {}); S.topup = null; ACT.backMe(); },
+  copy: function (v) { copyText(v); },
+  redeem: function () { call('me.redeem').then(function (me) { S.me = me; toast(T('redeemed')); render(true); }).catch(function (e) { toast(errText(e)); }); },
+  scan: function () { if (S.me && S.me.charging) { openCharge(); return; } S.err = ''; S.camAsked = false; S.view = 'scan'; render(); }, stopScan: function () { stopCam(); goHome(); },
+  pickGun: function (v) { lookup(v); }, openCharge: function () { openCharge(); },
+  startCharge: function () {
+    S.busy = T('starting'); S.err = ''; render(true);
+    call('charge.start', { connId: S.scan.conn.id }).then(function (d) { S.busy = ''; S.charge = d; S.me.charging = d.id; render(); pollCharge(false); }).catch(function (e) { S.busy = ''; S.err = errText(e); render(true); });
+  },
+  askStop: function () { S.sheet = 'stop'; render(true); },
+  stopYes: function () { S.sheet = ''; S.busy = T('starting'); render(true); call('charge.stop').then(function (d) { S.busy = ''; clearInterval(chargePoll); S.charge = null; S.me.charging = ''; S.me.balance = d.balance; S.done = d.last; S.rate = 0; S.thanks = null; S.hist = null; render(); }).catch(function (e) { S.busy = ''; toast(errText(e)); pollCharge(true); }); },
+  rate: function (v) { S.rate = Number(v); var t = ($('#rateText') || {}).value; render(true); if (t) $('#rateText').value = t; },
+  rateSend: function () { var t = ($('#rateText') || {}).value || ''; call('charge.rate', { session: S.done.id, stars: S.rate, text: t }).catch(function () {}); S.done.rated = true; thanks(); },
+  rateSkip: function () { thanks(); },
+  fbStar: function (v) { S.fb.stars = Number(v); S.fb.text = ($('#fbText') || {}).value; render(true); }, fbTopic: function (v) { S.fb.topic = v; S.fb.text = ($('#fbText') || {}).value; render(true); },
+  fbSend: function () { S.fb.text = $('#fbText').value; if (!S.fb.stars && !S.fb.text.trim()) { S.err = T('e_empty'); render(true); return; } S.busy = T('send'); render(true); call('help.feedback', { stars: S.fb.stars || 5, topic: S.fb.topic ? T(S.fb.topic) : '', text: S.fb.text }).then(function () { S.busy = ''; S.fb.sent = true; S.err = ''; render(true); }).catch(function (e) { S.busy = ''; S.err = errText(e); render(true); }); },
+  rpType: function (v) { keepRp(); S.rp.type = v; render(true); },
+  rpSend: function () { keepRp(); var r = S.rp; if (!r.type && !(r.text || '').trim()) { S.err = T('e_empty'); render(true); return; } S.busy = T('send'); render(true); call('help.report', { type: r.type ? T(r.type) : '', branch: r.branch, charger: r.charger, text: r.text, note: r.note, photos: r.photos }).then(function (d) { S.busy = ''; S.rp.ref = d.ref; S.err = ''; render(true); }).catch(function (e) { S.busy = ''; S.err = errText(e); render(true); }); }
+};
+function keepRp() { var r = S.rp; if ($('#rpText')) { r.text = $('#rpText').value; r.note = $('#rpNote').value; r.branch = $('#rpW').value; r.charger = $('#rpC').value; } }
+
+document.addEventListener('click', function (e) {
+  var el = e.target.closest('[data-a]');
+  if (!el) return;
+  if (el.dataset.a === 'closeSheet' && e.target.closest('[data-stop]') && !e.target.closest('button[data-a=closeSheet]')) return;
+  if (el.tagName === 'A') return;
+  e.preventDefault();
+  var f = ACT[el.dataset.a]; if (f) f(el.dataset.v, el);
+});
+document.addEventListener('input', function (e) {
+  var t = e.target;
+  if (t.dataset.f) S.form[t.dataset.f] = t.value;
+  if (t.dataset.g) S.ag[t.dataset.g] = t.value;
+  if (t.id === 'q') { S.q = t.value; var p = t.selectionStart; render(true); var n = $('#q'); n.focus(); try { n.setSelectionRange(p, p); } catch (x) {} }
+  if (t.id === 'ta') { S.topAmt = Number(t.value) || 0; var bt = document.querySelector('[data-a=topupCreate]'); if (bt) bt.textContent = TF('topupBy', { a: kip(S.topAmt) }); }
+});
+document.addEventListener('change', function (e) {
+  var t = e.target;
+  if (t.id === 'rpPhoto' && t.files) {
+    keepRp();
+    Array.prototype.slice.call(t.files, 0, 6 - S.rp.photos.length).forEach(function (f) { shrink(f, function (d) { S.rp.photos.push(d); render(true); }); });
+  }
+});
+/** phone photos are big: resize to 1280px JPEG before sending */
+function shrink(file, cb) {
+  var r = new FileReader();
+  r.onload = function () { var img = new Image(); img.onload = function () { var s = Math.min(1, 1280 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = img.width * s; c.height = img.height * s; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', 0.72)); }; img.src = r.result; };
+  r.readAsDataURL(file);
+}
+document.addEventListener('submit', function (e) {
+  e.preventDefault();
+  var id = e.target.id, fm = S.form;
+  if (id === 'authForm') {
+    S.err = '';
+    if (S.authMode === 'register') {
+      if ((fm.name || '').trim().length < 2) S.err = T('e_name');
+      else if (String(fm.phone || '').replace(/\D/g, '').length < 8) S.err = T('e_phone');
+      else if ((fm.pass || '').length < 6) S.err = T('e_passShort');
+      else if (fm.pass !== fm.pass2) S.err = T('e_pass2');
+      if (S.err) { render(true); return; }
+      S.busy = T('creating'); render(true);
+      call('auth.register', { name: fm.name, phone: fm.phone, pass: fm.pass, lang: S.lang }).then(signedIn).catch(authFail);
+    } else {
+      if (!fm.id || !fm.pass) { S.err = T('e_none'); render(true); return; }
+      S.busy = T('signingIn'); render(true);
+      call('auth.login', { id: fm.id, pass: fm.pass }).then(signedIn).catch(authFail);
+    }
+  }
+  if (id === 'profForm') { S.busy = T('save'); render(true); call('me.update', { name: fm.name, phone: fm.phone }).then(function (me) { S.busy = ''; S.me = me; S.err = ''; toast(T('saved')); ACT.backMe(); }).catch(function (er) { S.busy = ''; S.err = errText(er); render(true); }); }
+  if (id === 'pwForm') {
+    if ((fm.pass || '').length < 6) { S.err = T('e_passShort'); render(true); return; } if (fm.pass !== fm.pass2) { S.err = T('e_pass2'); render(true); return; }
+    S.busy = T('save'); render(true);
+    call('me.password', { cur: fm.cur, pass: fm.pass }).then(function (d) { if (d && d.token) { S.token = d.token; store.set('token', d.token); } S.busy = ''; S.err = ''; S.form = {}; toast(T('passChanged')); ACT.backMe(); }).catch(function (er) { S.busy = ''; S.err = errText(er); render(true); });
+  }
+  if (id === 'codeForm') { var code = $('#code').value.trim(); if (code) { stopCam(); lookup(code); } }
+  if (id === 'agForm') {
+    var a = S.ag; a.name = a.name || S.me.name; a.phone = a.phone || S.me.phone;
+    if (!a.name || !a.phone || !(a.place || '').trim()) { S.err = T('e_empty'); render(true); return; }
+    S.busy = T('send'); render(true);
+    call('agent.apply', a).then(function () { S.busy = ''; S.ag = { sent: true }; S.err = ''; render(true); }).catch(function (er) { S.busy = ''; S.err = errText(er); render(true); });
+  }
+});
+function authFail(e) { S.busy = ''; S.err = errText(e) + (e.error === 'pass' && e.msg ? ' · ' + e.msg : ''); render(true); }
+function signedIn(d) {
+  S.busy = ''; S.token = d.token; S.me = d.me; store.set('token', d.token); S.form = {}; S.err = '';
+  refreshBoot().then(function () {
+    S.view = 'main'; S.tab = 'branches'; render();
+    if (S.qr) { var q = S.qr; S.qr = ''; lookup(q); }
+  });
+}
+function refreshBoot() {
+  return call('pub.boot', { token: S.token }).then(function (d) {
+    S.boot = d; if (d.me) S.me = d.me;
+    if (S.view === 'main' && S.tab === 'branches') render(true);
+  }).catch(function () {});
+}
+function refreshMe() { if (S.token) call('me.get').then(function (me) { S.me = me; if (S.view === 'main' && S.tab === 'me') render(true); }).catch(function () {}); }
+
+/* ---------- start ---------- */
+(function start() {
+  document.documentElement.dataset.theme = S.theme;
+  call('pub.boot', { token: S.token }).then(function (d) {
+    S.boot = d;
+    if (S.token && d.me) {
+      S.me = d.me; S.view = 'main'; S.splash = true; render();
+      setTimeout(function () { S.splash = false; render(true); if (S.qr) { var q = S.qr; S.qr = ''; lookup(q); } else if (S.me.charging) openCharge(); }, 2700);
+    } else { if (S.token) { S.token = ''; store.del('token'); } S.view = 'auth'; S.authMode = S.qr ? 'register' : 'login'; render(); }
+    locate();
+  }).catch(function (e) { $('#app').innerHTML = '<div class="pad" style="text-align:center;padding:60px 20px"><img src="' + LOGO + '" width="90" alt=""><p>' + T('e_network') + '</p><button class="btn" onclick="location.reload()">↻</button></div>'; });
+  setInterval(function () { if (S.view === 'main' && S.tab === 'branches' && S.boot && S.boot.ads.length > 1) { S.ad++; var img = document.querySelector('.ads img'); if (img) { var a = S.boot.ads[S.ad % S.boot.ads.length]; img.src = a.img; document.querySelectorAll('.dots i').forEach(function (d, i) { d.className = i === S.ad % S.boot.ads.length ? 'on' : ''; }); } } }, 5000);
+  setInterval(function () { if (S.view === 'main' && (S.tab === 'branches' || S.tab === 'map') && document.activeElement && document.activeElement.id !== 'q') refreshBoot(); }, 30000);
+})();
+
+</script>
+</body>
+</html>

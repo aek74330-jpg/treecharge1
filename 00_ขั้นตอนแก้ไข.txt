@@ -1,0 +1,38 @@
+TREE CHARGE — ไฟล์ที่ต้องแก้ (เปิดแอดมิน + แฟรนไชส์ + กล้องสแกน)
+==================================================================
+
+ส่วน A: Apps Script (4 ไฟล์)
+-----------------------------
+ไฟล์ที่ส่งให้                   →  วางทับไฟล์นี้ใน Apps Script
+A1_AppsScript_รหัส.gs.txt       →  รหัส.gs
+A2_AppsScript_Admin.gs.txt      →  Admin.gs
+A3_AppsScript_Setup.gs.txt      →  Setup.gs
+A4_AppsScript_App.html.txt      →  App  (ไฟล์ HTML)
+
+วิธีวาง: เปิดไฟล์ → Ctrl+A → Delete → วางโค้ดใหม่ → Ctrl+S
+
+แล้วทำต่อ:
+1. เลือกฟังก์ชัน fixAdmin → ▶ เรียกใช้ → ไปกด OK ที่กล่องข้อความในหน้า Google Sheet
+   (ต้องขึ้น ✓ App ✓ AdminUI ✓ PartnerUI ✓ Logo)
+2. Deploy เวอร์ชันใหม่:
+   การทำให้ใช้งานได้ → จัดการการทำให้ใช้งานได้ → ✏️ → เวอร์ชัน: เวอร์ชันใหม่ → ทำให้ใช้งานได้
+
+ส่วน B: GitHub (6 ไฟล์ ในโฟลเดอร์ GitHub)
+------------------------------------------
+index.html  admin.html  partner.html  sw.js  manifest-admin.json  manifest-partner.json
+
+1. เปิด repository → Add file → Upload files
+2. ลากทั้ง 6 ไฟล์ขึ้นไป (วางระดับเดียวกับ config.js ไม่ใส่โฟลเดอร์ย่อย)
+3. Commit changes → รอ 1–2 นาที
+** ห้ามอัป config.js ทับ (ลิงก์ /exec ที่ใส่ไว้จะหาย) **
+
+ส่วน C: ทดสอบ
+--------------
+ปิดแอปในมือถือให้สนิท แล้วเปิดใหม่
+
+แอดมิน     …github.io/ชื่อrepo/admin.html      admin / tree1234
+แฟรนไชส์   …github.io/ชื่อrepo/partner.html    dongdok / 123456
+ลูกค้า     …github.io/ชื่อrepo/                Somchai / 123456
+           → กดปุ่มสแกนสีเขียว → อนุญาตกล้อง → ส่อง QR
+
+ติดตรงไหน ส่งรูปหน้าจอที่เห็นลิงก์ด้านบน
